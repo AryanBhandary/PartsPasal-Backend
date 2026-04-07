@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PartsPasal.Application/PartsPasal.Application.csproj" />
+  <Project Path="PartsPasal.Domain/PartsPasal.Domain.csproj" />
+  <Project Path="PartsPasal.Infrastructure/PartsPasal.Infrastructure.csproj" />
+  <Project Path="PartsPasal/PartsPasal.csproj" />
+</Solution>
