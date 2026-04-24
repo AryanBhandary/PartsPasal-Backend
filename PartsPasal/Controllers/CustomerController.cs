@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.Interfaces;
 
@@ -7,6 +8,7 @@ namespace PartsPasal.Controllers;
 /// Controller for customer self-service features.
 /// Features: Booking, history, AI failed part alerts, part requests.
 /// </summary>
+[Authorize(Roles = "Customer,Staff,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class CustomerController : ControllerBase

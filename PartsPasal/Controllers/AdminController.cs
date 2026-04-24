@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.Interfaces;
 
@@ -7,6 +8,7 @@ namespace PartsPasal.Controllers;
 /// Controller for high-level administrative tasks.
 /// Features: Staff management, Vendor details, Financial reports, Stock alerts.
 /// </summary>
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class AdminController : ControllerBase

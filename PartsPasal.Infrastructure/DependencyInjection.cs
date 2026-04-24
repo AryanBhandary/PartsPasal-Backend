@@ -6,6 +6,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using PartsPasal.Domain.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using PartsPasal.Infrastructure.Services;
 
 namespace PartsPasal.Infrastructure;
 
@@ -18,8 +22,32 @@ public static class DependencyInjection
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddIdentity<User, Microsoft.AspNetCore.Identity.IdentityRole<int>>()
+            .AddRoles<Microsoft.AspNetCore.Identity.IdentityRole<int>>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
+
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] 
+            ?? throw new InvalidOperationException("JWT SecretKey is missing from configuration. Please set it in appsettings.json.");
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidAudience = jwtSettings["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            };
+        });
 
         // DbContext is already registered above
 
@@ -29,6 +57,7 @@ public static class DependencyInjection
         // Register services here
         // services.AddScoped<IAIService, AIService>();
         // services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.Interfaces;
 
@@ -7,6 +8,7 @@ namespace PartsPasal.Controllers;
 /// Controller for staff members handling customers and sales.
 /// Features: Customer registration, Sales invoices, Search customers, Reports.
 /// </summary>
+[Authorize(Roles = "Staff,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class StaffController : ControllerBase

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PartsPasal.Domain.Entities;
+using PartsPasal.Domain.Enums;
 
 namespace PartsPasal.Infrastructure.Data;
 
@@ -61,5 +62,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
         modelBuilder.Entity<PurchaseInvoiceItem>()
             .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems).OnDelete(DeleteBehavior.Restrict);
+
+        // 4. Seed default roles
+        modelBuilder.Entity<IdentityRole<int>>().HasData(
+            new IdentityRole<int> { Id = 1, Name = nameof(UserRole.Customer), NormalizedName = "CUSTOMER", ConcurrencyStamp = "customer-role-stamp" },
+            new IdentityRole<int> { Id = 2, Name = nameof(UserRole.Staff), NormalizedName = "STAFF", ConcurrencyStamp = "staff-role-stamp" },
+            new IdentityRole<int> { Id = 3, Name = nameof(UserRole.Admin), NormalizedName = "ADMIN", ConcurrencyStamp = "admin-role-stamp" }
+        );
     }
 }
