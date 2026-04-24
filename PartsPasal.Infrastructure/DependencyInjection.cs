@@ -1,10 +1,11 @@
 using PartsPasal.Application.Interfaces;
-using PartsPasal.Application.Services;
 using PartsPasal.Infrastructure.Data;
 using PartsPasal.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
+using PartsPasal.Domain.Entities;
 
 namespace PartsPasal.Infrastructure;
 
@@ -16,10 +17,14 @@ public static class DependencyInjection
             // options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))); // OR Npgsql for Postgres
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+        services.AddIdentity<User, Microsoft.AspNetCore.Identity.IdentityRole<int>>()
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
-        // Register repositories here
-        // services.AddScoped<IVehiclePartRepository, VehiclePartRepository>();
+        // DbContext is already registered above
+
+        // Register generic repository
+        services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
 
         // Register services here
         // services.AddScoped<IAIService, AIService>();

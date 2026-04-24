@@ -2,12 +2,32 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PartsPasal.Domain.Entities;
 
-/// <summary>
-/// Represents a vehicle part in the inventory.
-/// Includes details for stock management, pricing, and category.
-/// Required Feature: Admin can add, edit, delete parts; Stock alerts if < 10.
-/// </summary>
+// Represents a vehicle part in the inventory
 public class VehiclePart
 {
-    // Id, Name, Description, Category, Price, StockQuantity, MinStockThreshold (default 10)
+    [Key]
+    public int Id { get; set; }
+
+    [Required]
+    [MaxLength(150)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
+    [Required]
+    [MaxLength(100)]
+    public string Category { get; set; } = string.Empty;
+
+    [Required]
+    public decimal Price { get; set; }
+
+    [Required]
+    public int StockQuantity { get; set; }
+
+    public int MinStockThreshold { get; set; } = 10;
+
+    // Navigation properties
+    public ICollection<SalesInvoiceItem> SalesInvoiceItems { get; set; } = new List<SalesInvoiceItem>();
+    public ICollection<PurchaseInvoiceItem> PurchaseInvoiceItems { get; set; } = new List<PurchaseInvoiceItem>();
 }
