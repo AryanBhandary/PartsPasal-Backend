@@ -32,6 +32,11 @@ public class CustomerController : ControllerBase
 
         var appointmentId = await _customerService.BookAppointmentAsync(userId, dto);
 
+        if (appointmentId == null)
+        {
+            return BadRequest("Vehicle not found or does not belong to this customer.");
+        }
+
         return Ok(new
         {
             message = "Appointment booked successfully.",
@@ -142,5 +147,158 @@ public class CustomerController : ControllerBase
         var requests = await _customerService.GetMyPartRequestsAsync(userId);
 
         return Ok(requests);
+    }
+
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var profile = await _customerService.GetProfileAsync(userId);
+
+        if (profile == null)
+        {
+            return NotFound("Customer profile not found.");
+        }
+
+        return Ok(profile);
+    }
+
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(UpdateCustomerProfileDto dto)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var updated = await _customerService.UpdateProfileAsync(userId, dto);
+
+        if (!updated)
+        {
+            return NotFound("Customer profile not found.");
+        }
+
+        return Ok(new
+        {
+            message = "Profile updated successfully."
+        });
+    }
+
+    [HttpPost("vehicles")]
+    public async Task<IActionResult> AddVehicle(CreateVehicleDto dto)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var vehicleId = await _customerService.AddVehicleAsync(userId, dto);
+
+        return Ok(new
+        {
+            message = "Vehicle added successfully.",
+            vehicleId
+        });
+    }
+
+    [HttpGet("vehicles")]
+    public async Task<IActionResult> GetMyVehicles()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var vehicles = await _customerService.GetMyVehiclesAsync(userId);
+
+        return Ok(vehicles);
+    }
+
+    [HttpPut("vehicles/{id}")]
+    public async Task<IActionResult> UpdateVehicle(int id, UpdateVehicleDto dto)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var updated = await _customerService.UpdateVehicleAsync(userId, id, dto);
+
+        if (!updated)
+        {
+            return NotFound("Vehicle not found.");
+        }
+
+        return Ok(new
+        {
+            message = "Vehicle updated successfully."
+        });
+    }
+
+    [HttpDelete("vehicles/{id}")]
+    public async Task<IActionResult> DeleteVehicle(int id)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var deleted = await _customerService.DeleteVehicleAsync(userId, id);
+
+        if (!deleted)
+        {
+            return NotFound("Vehicle not found.");
+        }
+
+        return Ok(new
+        {
+            message = "Vehicle deleted successfully."
+        });
     }
 }

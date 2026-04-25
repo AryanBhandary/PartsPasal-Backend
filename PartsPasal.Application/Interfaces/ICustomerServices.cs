@@ -5,8 +5,7 @@ namespace PartsPasal.Application.Interfaces;
 public interface ICustomerService
 {
     // Book an appointment for a vehicle service
-    Task<int> BookAppointmentAsync(int userId, CreateAppointmentDto dto);
-
+    Task<int?> BookAppointmentAsync(int userId, CreateAppointmentDto dto);
     // Get a list of appointments for the logged-in user
     Task<List<AppointmentDto>> GetMyAppointmentsAsync(int userId);
 
@@ -21,4 +20,22 @@ public interface ICustomerService
 
     // Get a list of part requests for the user
     Task<List<PartRequestDto>> GetMyPartRequestsAsync(int userId);
+
+    // Get the profile information of the user
+    Task<CustomerProfileDto?> GetProfileAsync(int userId);
+
+    // Update the profile information of the user
+    Task<bool> UpdateProfileAsync(int userId, UpdateCustomerProfileDto dto);
+
+    // Add a vehicle 
+    Task<int> AddVehicleAsync(int userId, CreateVehicleDto dto);
+
+    // Get a list of vehicles 
+    Task<List<VehicleDto>> GetMyVehiclesAsync(int userId);
+
+    // Update a vehicle's information
+    Task<bool> UpdateVehicleAsync(int userId, int vehicleId, UpdateVehicleDto dto);
+
+    // Delete a vehicle
+    Task<bool> DeleteVehicleAsync(int userId, int vehicleId);
 }
