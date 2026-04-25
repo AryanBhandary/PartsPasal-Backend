@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PartsPasal.Infrastructure.Services;
+using PartsPasal.Application.Services;
 
 namespace PartsPasal.Infrastructure;
 

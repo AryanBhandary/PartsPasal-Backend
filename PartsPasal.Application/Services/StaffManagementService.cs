@@ -4,7 +4,7 @@ using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 using PartsPasal.Domain.Enums;
 
-namespace PartsPasal.Infrastructure.Services;
+namespace PartsPasal.Application.Services;
 
 public class StaffManagementService(UserManager<User> userManager) : IStaffManagementService
 {
