@@ -12,6 +12,7 @@ using System.Text;
 using PartsPasal.Infrastructure.Services;
 using PartsPasal.Application.Services;
 
+
 namespace PartsPasal.Infrastructure;
 
 public static class DependencyInjection
@@ -60,6 +61,9 @@ public static class DependencyInjection
         // services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStaffManagementService, StaffManagementService>();
+
+        // Register customer service
+        services.AddScoped<ICustomerService, CustomerService>();
 
         return services;
     }
