@@ -40,4 +40,18 @@ public class CustomerService : ICustomerService
 
         return appointment.Id;
     }
+
+    public async Task<List<AppointmentDto>> GetMyAppointmentsAsync(int userId)
+    {
+        var appointments = await _appointmentRepository.FindAsync(a => a.UserId == userId);
+
+        return appointments.Select(a => new AppointmentDto
+        {
+            Id = a.Id,
+            VehicleId = a.VehicleId,
+            AppointmentDate = a.AppointmentDate,
+            Description = a.Description,
+            Status = a.Status.ToString()
+        }).ToList();
+    }
 }

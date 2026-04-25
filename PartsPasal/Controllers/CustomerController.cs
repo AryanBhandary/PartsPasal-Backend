@@ -38,4 +38,21 @@ public class CustomerController : ControllerBase
             appointmentId
         });
     }
+
+    [HttpGet("appointments")]
+    public async Task<IActionResult> GetMyAppointments()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        var userId = int.Parse(userIdText);
+
+        var appointments = await _customerService.GetMyAppointmentsAsync(userId);
+
+        return Ok(appointments);
+    }
 }
