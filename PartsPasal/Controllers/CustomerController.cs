@@ -55,4 +55,92 @@ public class CustomerController : ControllerBase
 
         return Ok(appointments);
     }
+
+    [HttpPut("appointments/{id}")]
+    public async Task<IActionResult> UpdateAppointment(int id, UpdateAppointmentDto dto)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        var userId = int.Parse(userIdText);
+
+        var updated = await _customerService.UpdateAppointmentAsync(userId, id, dto);
+
+        if (!updated)
+        {
+            return NotFound("Appointment not found.");
+        }
+
+        return Ok(new
+        {
+            message = "Appointment updated successfully."
+        });
+    }
+
+    [HttpDelete("appointments/{id}")]
+    public async Task<IActionResult> CancelAppointment(int id)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        var userId = int.Parse(userIdText);
+
+        var deleted = await _customerService.CancelAppointmentAsync(userId, id);
+
+        if (!deleted)
+        {
+            return NotFound("Appointment not found.");
+        }
+
+        return Ok(new
+        {
+            message = "Appointment cancelled successfully."
+        });
+    }
+
+    [HttpPost("part-requests")]
+    public async Task<IActionResult> CreatePartRequest(CreatePartRequestDto dto)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        var userId = int.Parse(userIdText);
+
+        var requestId = await _customerService.CreatePartRequestAsync(userId, dto);
+
+        return Ok(new
+        {
+            message = "Part request submitted successfully.",
+            requestId
+        });
+    }
+
+    [HttpGet("part-requests")]
+    public async Task<IActionResult> GetMyPartRequests()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        var userId = int.Parse(userIdText);
+
+        var requests = await _customerService.GetMyPartRequestsAsync(userId);
+
+        return Ok(requests);
+    }
 }
