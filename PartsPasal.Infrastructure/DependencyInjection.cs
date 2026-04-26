@@ -64,7 +64,8 @@ public static class DependencyInjection
 
         // Register customer service
         services.AddScoped<ICustomerService, CustomerService>();
-
+        //register part service
+        services.AddScoped<IPartService, PartService>();
         return services;
     }
 }
