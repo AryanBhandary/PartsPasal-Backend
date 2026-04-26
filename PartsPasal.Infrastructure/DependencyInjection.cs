@@ -68,6 +68,8 @@ public static class DependencyInjection
         services.AddScoped<IPartService, PartService>();
         //register vendor service 
         services.AddScoped<IVendorService, VendorService>();
+        //register purchase service
+        services.AddScoped<IPurchaseService, PurchaseService>();
         return services;
     }
 }
