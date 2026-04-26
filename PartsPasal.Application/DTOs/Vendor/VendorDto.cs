@@ -1,10 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace PartsPasal.Application.DTOs.Vendor;
 
-namespace PartsPasal.Application.DTOs.Vendor
+public class VendorDto
 {
-    internal class VendorDto
-    {
-    }
+    public int Id { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string? ContactPerson { get; set; }
+
+    public string Phone { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string? Address { get; set; }
+
+    public string Category { get; set; } = string.Empty;
 }

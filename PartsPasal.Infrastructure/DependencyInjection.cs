@@ -66,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<ICustomerService, CustomerService>();
         //register part service
         services.AddScoped<IPartService, PartService>();
+        //register vendor service 
+        services.AddScoped<IVendorService, VendorService>();
         return services;
     }
 }
