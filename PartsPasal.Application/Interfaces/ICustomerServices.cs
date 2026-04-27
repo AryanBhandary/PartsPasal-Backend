@@ -38,4 +38,16 @@ public interface ICustomerService
 
     // Delete a vehicle
     Task<bool> DeleteVehicleAsync(int userId, int vehicleId);
+
+    // Staff: Register new customer with vehicle
+    Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto);
+
+    // Staff: View all customers with vehicles
+    Task<List<CustomerProfileDto>> GetAllCustomersAsync();
+
+    // Staff: View specific customer details
+    Task<CustomerProfileDto?> GetCustomerByIdAsync(int id);
+
+    // Staff: Search customers (name, phone, id, vehicle number)
+    Task<List<CustomerProfileDto>> SearchCustomersAsync(string query);
 }

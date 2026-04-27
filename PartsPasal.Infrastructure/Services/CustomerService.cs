@@ -11,7 +11,6 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<PartRequest> _partRequestRepository;
     private readonly IRepositoryBase<User> _userRepository;
 
-
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
         IRepositoryBase<Vehicle> vehicleRepository,
@@ -20,9 +19,11 @@ public class CustomerService : ICustomerService
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
-        _partRequestRepository = partRequestRepository; 
+        _partRequestRepository = partRequestRepository;
         _userRepository = userRepository;
     }
+
+    // ================= EXISTING FEATURES =================
 
     public async Task<int?> BookAppointmentAsync(int userId, CreateAppointmentDto dto)
     {
@@ -30,9 +31,7 @@ public class CustomerService : ICustomerService
             v.Id == dto.VehicleId && v.UserId == userId);
 
         if (!vehicles.Any())
-        {
             return null;
-        }
 
         var appointment = new Appointment
         {
@@ -70,9 +69,7 @@ public class CustomerService : ICustomerService
         var appointment = appointments.FirstOrDefault();
 
         if (appointment == null)
-        {
             return false;
-        }
 
         appointment.AppointmentDate = dto.AppointmentDate;
         appointment.Description = dto.Description;
@@ -91,16 +88,13 @@ public class CustomerService : ICustomerService
         var appointment = appointments.FirstOrDefault();
 
         if (appointment == null)
-        {
             return false;
-        }
 
         _appointmentRepository.Delete(appointment);
         await _appointmentRepository.SaveChangesAsync();
 
         return true;
     }
-
 
     public async Task<int> CreatePartRequestAsync(int userId, CreatePartRequestDto dto)
     {
@@ -134,9 +128,7 @@ public class CustomerService : ICustomerService
         var user = await _userRepository.GetByIdAsync(userId);
 
         if (user == null)
-        {
             return null;
-        }
 
         return new CustomerProfileDto
         {
@@ -156,9 +148,7 @@ public class CustomerService : ICustomerService
         var user = await _userRepository.GetByIdAsync(userId);
 
         if (user == null)
-        {
             return false;
-        }
 
         user.Name = dto.Name;
         user.PhoneNumber = dto.PhoneNumber;
@@ -213,9 +203,7 @@ public class CustomerService : ICustomerService
         var vehicle = vehicles.FirstOrDefault();
 
         if (vehicle == null)
-        {
             return false;
-        }
 
         vehicle.LicensePlate = dto.LicensePlate;
         vehicle.Model = dto.Model;
@@ -238,9 +226,7 @@ public class CustomerService : ICustomerService
         var vehicle = vehicles.FirstOrDefault();
 
         if (vehicle == null)
-        {
             return false;
-        }
 
         _vehicleRepository.Delete(vehicle);
         await _vehicleRepository.SaveChangesAsync();
@@ -248,5 +234,132 @@ public class CustomerService : ICustomerService
         return true;
     }
 
+    // ================= STAFF FEATURES =================
 
+    public async Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto)
+    {
+        var user = new User
+        {
+            Name = dto.Name,
+            Email = dto.Email,
+            PhoneNumber = dto.PhoneNumber,
+            Address = dto.Address,
+            RegistrationDate = DateTime.UtcNow,
+            TotalServiceSpent = 0
+        };
+
+        await _userRepository.AddAsync(user);
+        await _userRepository.SaveChangesAsync();
+
+        var vehicle = new Vehicle
+        {
+            UserId = user.Id,
+            LicensePlate = dto.LicensePlate,
+            Model = dto.Model,
+            Year = dto.Year
+        };
+
+        await _vehicleRepository.AddAsync(vehicle);
+        await _vehicleRepository.SaveChangesAsync();
+
+        return user.Id;
+    }
+
+    public async Task<List<CustomerProfileDto>> GetAllCustomersAsync()
+    {
+        var users = await _userRepository.GetAllAsync();
+
+        var result = new List<CustomerProfileDto>();
+
+        foreach (var user in users)
+        {
+            var vehicles = await _vehicleRepository.FindAsync(v => v.UserId == user.Id);
+
+            result.Add(new CustomerProfileDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Address = user.Address,
+                RegistrationDate = user.RegistrationDate,
+                TotalServiceSpent = user.TotalServiceSpent,
+                IsLoyal = user.IsLoyal,
+                Vehicles = vehicles.Select(v => new VehicleDto
+                {
+                    Id = v.Id,
+                    LicensePlate = v.LicensePlate,
+                    Model = v.Model,
+                    Year = v.Year,
+                    VIN = v.VIN,
+                    LastServiceDate = v.LastServiceDate,
+                    Mileage = v.Mileage
+                }).ToList()
+            });
+        }
+
+        return result;
+    }
+
+    public async Task<CustomerProfileDto?> GetCustomerByIdAsync(int id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+
+        if (user == null)
+            return null;
+
+        var vehicles = await _vehicleRepository.FindAsync(v => v.UserId == id);
+
+        return new CustomerProfileDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            Address = user.Address,
+            RegistrationDate = user.RegistrationDate,
+            TotalServiceSpent = user.TotalServiceSpent,
+            IsLoyal = user.IsLoyal,
+            Vehicles = vehicles.Select(v => new VehicleDto
+            {
+                Id = v.Id,
+                LicensePlate = v.LicensePlate,
+                Model = v.Model,
+                Year = v.Year,
+                VIN = v.VIN,
+                LastServiceDate = v.LastServiceDate,
+                Mileage = v.Mileage
+            }).ToList()
+        };
+    }
+
+    public async Task<List<CustomerProfileDto>> SearchCustomersAsync(string query)
+    {
+        var users = await _userRepository.GetAllAsync();
+
+        var matchedUsers = users.Where(u =>
+            u.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            (u.PhoneNumber != null && u.PhoneNumber.Contains(query)) ||
+            u.Id.ToString() == query
+        ).ToList();
+
+        var vehicles = await _vehicleRepository.FindAsync(v => v.LicensePlate.Contains(query));
+
+        var vehicleUserIds = vehicles.Select(v => v.UserId).ToList();
+
+        matchedUsers.AddRange(users.Where(u => vehicleUserIds.Contains(u.Id)));
+
+        var distinctUsers = matchedUsers.GroupBy(u => u.Id).Select(g => g.First()).ToList();
+
+        var result = new List<CustomerProfileDto>();
+
+        foreach (var user in distinctUsers)
+        {
+            var customer = await GetCustomerByIdAsync(user.Id);
+            if (customer != null)
+                result.Add(customer);
+        }
+
+        return result;
+    }
 }
