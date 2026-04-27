@@ -1,4 +1,4 @@
-﻿using PartsPasal.Application.DTOs.Customer;
+using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 
@@ -38,7 +38,9 @@ public class CustomerService : ICustomerService
         {
             UserId = userId,
             VehicleId = dto.VehicleId,
-            AppointmentDate = dto.AppointmentDate,
+            // Npgsql requires DateTimeKind.Utc for 'timestamp with time zone' columns.
+            // JSON deserialization produces DateTimeKind.Unspecified, so we normalize here.
+            AppointmentDate = DateTime.SpecifyKind(dto.AppointmentDate, DateTimeKind.Utc),
             Description = dto.Description
         };
 
@@ -74,7 +76,7 @@ public class CustomerService : ICustomerService
             return false;
         }
 
-        appointment.AppointmentDate = dto.AppointmentDate;
+        appointment.AppointmentDate = DateTime.SpecifyKind(dto.AppointmentDate, DateTimeKind.Utc);
         appointment.Description = dto.Description;
 
         _appointmentRepository.Update(appointment);
@@ -179,7 +181,9 @@ public class CustomerService : ICustomerService
             Model = dto.Model,
             Year = dto.Year,
             VIN = dto.VIN,
-            LastServiceDate = dto.LastServiceDate,
+            LastServiceDate = dto.LastServiceDate.HasValue
+                ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
+                : null,
             Mileage = dto.Mileage
         };
 
@@ -221,7 +225,9 @@ public class CustomerService : ICustomerService
         vehicle.Model = dto.Model;
         vehicle.Year = dto.Year;
         vehicle.VIN = dto.VIN;
-        vehicle.LastServiceDate = dto.LastServiceDate;
+        vehicle.LastServiceDate = dto.LastServiceDate.HasValue
+            ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
+            : null;
         vehicle.Mileage = dto.Mileage;
 
         _vehicleRepository.Update(vehicle);

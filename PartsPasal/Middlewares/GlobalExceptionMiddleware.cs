@@ -32,7 +32,7 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
         {
             StatusCode = context.Response.StatusCode,
             Message = "Internal Server Error. An unexpected error occurred.",
-            Detailed = exception.Message // Optional: you might want to hide this in production
+            Detailed = exception.Message 
         };
 
         var jsonResponse = JsonSerializer.Serialize(response);

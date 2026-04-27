@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PartsPasal.Infrastructure.Data;
 
 #nullable disable
 
-namespace PartsPasal.Infrastructure.Data.Migrations
+namespace PartsPasal.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260425153119_Third")]
+    partial class Third
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -207,7 +210,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("Appointments", (string)null);
+                    b.ToTable("Appointments");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.PartRequest", b =>
@@ -236,7 +239,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PartRequests", (string)null);
+                    b.ToTable("PartRequests");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.PurchaseInvoice", b =>
@@ -264,7 +267,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("PurchaseInvoices", (string)null);
+                    b.ToTable("PurchaseInvoices");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.PurchaseInvoiceItem", b =>
@@ -294,7 +297,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("VehiclePartId");
 
-                    b.ToTable("PurchaseInvoiceItems", (string)null);
+                    b.ToTable("PurchaseInvoiceItems");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.Review", b =>
@@ -328,7 +331,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.SalesInvoice", b =>
@@ -369,7 +372,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("SalesInvoices", (string)null);
+                    b.ToTable("SalesInvoices");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.SalesInvoiceItem", b =>
@@ -399,7 +402,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("VehiclePartId");
 
-                    b.ToTable("SalesInvoiceItems", (string)null);
+                    b.ToTable("SalesInvoiceItems");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.User", b =>
@@ -527,7 +530,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Vehicles", (string)null);
+                    b.ToTable("Vehicles");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.VehiclePart", b =>
@@ -564,7 +567,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("VehicleParts", (string)null);
+                    b.ToTable("VehicleParts");
                 });
 
             modelBuilder.Entity("PartsPasal.Domain.Entities.Vendor", b =>
@@ -603,7 +606,7 @@ namespace PartsPasal.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Vendors", (string)null);
+                    b.ToTable("Vendors");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
