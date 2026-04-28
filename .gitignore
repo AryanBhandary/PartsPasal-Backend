@@ -58,6 +58,9 @@ Desktop.ini
 .env.*
 appsettings.Development.json
 appsettings.Local.json
+appsettings.json
+**/Migrations/
+**/*ModelSnapshot.cs
 
 # =========================
 # User secrets
