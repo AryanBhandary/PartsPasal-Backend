@@ -301,4 +301,25 @@ public class CustomerController : ControllerBase
             message = "Vehicle deleted successfully."
         });
     }
+
+    
+    [HttpGet("history")]
+    public async Task<IActionResult> GetCustomerHistory()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var history = await _customerService.GetCustomerHistoryAsync(userId);
+
+        return Ok(history);
+    }
 }
