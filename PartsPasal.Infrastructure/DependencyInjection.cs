@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PartsPasal.Infrastructure.Services;
+using PartsPasal.Infrastructure.Jobs;
 using PartsPasal.Application.Services;
 
 
@@ -79,6 +80,10 @@ public static class DependencyInjection
         // Registering notification and automation services
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ISystemAutomationService, SystemAutomationService>();
+
+        // Background automation (low stock + credit reminders)
+        services.AddHostedService<SystemAutomationHostedService>();
+        
         //register purchase service
         services.AddScoped<IPurchaseService, PurchaseService>();
         return services;

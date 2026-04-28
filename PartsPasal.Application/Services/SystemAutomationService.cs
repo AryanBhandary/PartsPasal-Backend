@@ -2,6 +2,7 @@ using PartsPasal.Application.DTOs.Notifications;
 using PartsPasal.Application.DTOs.System;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace PartsPasal.Application.Services;
 
@@ -13,6 +14,7 @@ public class SystemAutomationService : ISystemAutomationService
     private readonly IRepositoryBase<VehiclePart> _partRepo;
     private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepo;
     private readonly IRepositoryBase<User> _userRepo;
+    private readonly UserManager<User> _userManager;
     private readonly IEmailService _emailService;
     private readonly INotificationService _notificationService;
 
@@ -20,20 +22,22 @@ public class SystemAutomationService : ISystemAutomationService
         IRepositoryBase<VehiclePart> partRepo,
         IRepositoryBase<SalesInvoice> salesInvoiceRepo,
         IRepositoryBase<User> userRepo,
+        UserManager<User> userManager,
         IEmailService emailService,
         INotificationService notificationService)
     {
         _partRepo = partRepo;
         _salesInvoiceRepo = salesInvoiceRepo;
         _userRepo = userRepo;
+        _userManager = userManager;
         _emailService = emailService;
         _notificationService = notificationService;
     }
 
     public async Task<LowStockCheckResultDto> CheckLowStockAsync()
     {
-        // notify admin when stock falls below the threshold (default threshold = 10).
-        var lowStockParts = await _partRepo.FindAsync(p => p.StockQuantity < p.MinStockThreshold);
+        // notify Admin when stock falls below 10 units.
+        var lowStockParts = await _partRepo.FindAsync(p => p.StockQuantity < 10);
 
         var result = new LowStockCheckResultDto
         {
@@ -50,7 +54,7 @@ public class SystemAutomationService : ISystemAutomationService
                 .ToList()
         };
 
-        // Storing a broadcast(to all users) notification so Admin dashboards can show the alert.
+        // Notify all Admin users.
         if (result.Count > 0)
         {
             var previewParts = result.Parts.Take(20).ToList();
@@ -60,12 +64,16 @@ public class SystemAutomationService : ISystemAutomationService
             if (remaining > 0)
                 partsText += $" and {remaining} more";
 
-            await _notificationService.SendAsync(new CreateNotificationDto
+            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            foreach (var admin in admins)
             {
-                Title = "Low Stock Alert",
-                Message = $"{result.Count} part(s) are below minimum stock: {partsText}.",
-                RecipientUserId = null
-            });
+                await _notificationService.SendAsync(new CreateNotificationDto
+                {
+                    Title = "Low Stock Alert",
+                    Message = $"{result.Count} part(s) are below stock threshold (<10): {partsText}.",
+                    RecipientUserId = admin.Id
+                });
+            }
         }
 
         return result;
