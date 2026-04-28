@@ -25,12 +25,9 @@ public class SalesService : ISalesService
 
     public async Task<SalesInvoiceDto> SellPartsAsync(CreateSaleDto dto)
     {
-        // Loyalty program: discount is applied if the customer is loyal.
         var customer = await _userRepo.GetByIdAsync(dto.CustomerId);
         if (customer == null)
             throw new Exception("Customer not found");
-
-        var isLoyalCustomer = customer.IsLoyal;
 
         var invoice = new SalesInvoice
         {
@@ -78,8 +75,8 @@ public class SalesService : ISalesService
 
         invoice.TotalAmount = totalAmount;
 
-        // Applying loyalty discount (10%).
-        invoice.DiscountAmount = isLoyalCustomer ? invoice.TotalAmount * 0.10m : 0m;
+        // A 10% discount is applied if this invoice total exceeds 5000.
+        invoice.DiscountAmount = invoice.TotalAmount > 5000m ? invoice.TotalAmount * 0.10m : 0m;
 
         invoice.FinalAmount = invoice.TotalAmount - invoice.DiscountAmount;
 

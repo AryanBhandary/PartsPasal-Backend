@@ -143,8 +143,7 @@ public class CustomerService : ICustomerService
             PhoneNumber = user.PhoneNumber,
             Address = user.Address,
             RegistrationDate = user.RegistrationDate,
-            TotalServiceSpent = user.TotalServiceSpent,
-            IsLoyal = user.IsLoyal
+            TotalServiceSpent = user.TotalServiceSpent
         };
     }
 
@@ -320,7 +319,6 @@ public class CustomerService : ICustomerService
                 Address = user.Address,
                 RegistrationDate = user.RegistrationDate,
                 TotalServiceSpent = user.TotalServiceSpent,
-                IsLoyal = user.IsLoyal,
                 Vehicles = vehicles.Select(v => new VehicleDto
                 {
                     Id = v.Id,
@@ -355,7 +353,6 @@ public class CustomerService : ICustomerService
             Address = user.Address,
             RegistrationDate = user.RegistrationDate,
             TotalServiceSpent = user.TotalServiceSpent,
-            IsLoyal = user.IsLoyal,
             Vehicles = vehicles.Select(v => new VehicleDto
             {
                 Id = v.Id,

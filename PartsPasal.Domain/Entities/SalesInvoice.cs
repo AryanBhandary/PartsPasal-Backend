@@ -26,7 +26,7 @@ public class SalesInvoice
     // Sum of all line items before discount
     public decimal TotalAmount { get; set; }
 
-    // Discount applied (10% if the customer qualifies for loyalty discount)
+    // Discount applied (10% if this invoice's TotalAmount exceeds 5000)
     public decimal DiscountAmount { get; set; }
 
     // TotalAmount minus DiscountAmount

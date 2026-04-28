@@ -65,6 +65,7 @@ public class InvoiceController(IInvoiceService invoiceService) : ControllerBase
     /// <summary>
     /// Sends the invoice email to the invoice's customer through their email.
     /// </summary>
+    [Authorize(Roles = "Staff,Admin")]
     [HttpPost("send-email")]
     public async Task<IActionResult> SendEmail([FromBody] SendInvoiceEmailDto dto)
     {

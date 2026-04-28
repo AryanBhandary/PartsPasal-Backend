@@ -24,7 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     {
         base.OnModelCreating(modelBuilder);
 
-        // 1. Configure decimal precision for monetary columns
+        // Configuring decimal precision for monetary columns
         modelBuilder.Entity<VehiclePart>().Property(p => p.Price).HasPrecision(18, 2);
         modelBuilder.Entity<SalesInvoice>().Property(s => s.TotalAmount).HasPrecision(18, 2);
         modelBuilder.Entity<SalesInvoice>().Property(s => s.DiscountAmount).HasPrecision(18, 2);
@@ -34,11 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         modelBuilder.Entity<PurchaseInvoiceItem>().Property(pi => pi.UnitPrice).HasPrecision(18, 2);
         modelBuilder.Entity<User>().Property(u => u.TotalServiceSpent).HasPrecision(18, 2);
 
-        // 2. Ignore computed properties
-        modelBuilder.Entity<User>().Ignore(u => u.IsLoyal);
-
-        // 3. Configure specific constraints (DeleteBehavior.Restrict to avoid multiple cascade paths)
-        // Everything else (like Cascade deletes on required foreign keys) is handled by EF Core conventions!
+        // Configuring specific constraints (DeleteBehavior.Restrict to avoid multiple cascade paths)
 
         modelBuilder.Entity<SalesInvoice>()
             .HasOne(s => s.Customer).WithMany(u => u.Purchases).OnDelete(DeleteBehavior.Restrict);
@@ -64,7 +60,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         modelBuilder.Entity<PurchaseInvoiceItem>()
             .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems).OnDelete(DeleteBehavior.Restrict);
 
-        // 4. Seed default roles
+        // Seeding default roles
         modelBuilder.Entity<IdentityRole<int>>().HasData(
             new IdentityRole<int> { Id = 1, Name = nameof(UserRole.Customer), NormalizedName = "CUSTOMER", ConcurrencyStamp = "customer-role-stamp" },
             new IdentityRole<int> { Id = 2, Name = nameof(UserRole.Staff), NormalizedName = "STAFF", ConcurrencyStamp = "staff-role-stamp" },
