@@ -38,4 +38,8 @@ public interface ICustomerService
 
     // Delete a vehicle
     Task<bool> DeleteVehicleAsync(int userId, int vehicleId);
+
+    // Get customer history
+    Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId);
 }
+

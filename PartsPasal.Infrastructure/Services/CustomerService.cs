@@ -10,18 +10,21 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<Vehicle> _vehicleRepository;
     private readonly IRepositoryBase<PartRequest> _partRequestRepository;
     private readonly IRepositoryBase<User> _userRepository;
+    private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepository;
 
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
         IRepositoryBase<Vehicle> vehicleRepository,
         IRepositoryBase<PartRequest> partRequestRepository,
-        IRepositoryBase<User> userRepository)
+        IRepositoryBase<User> userRepository,
+        IRepositoryBase<SalesInvoice> salesInvoiceRepository)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
-        _partRequestRepository = partRequestRepository; 
+        _partRequestRepository = partRequestRepository;
         _userRepository = userRepository;
+        _salesInvoiceRepository = salesInvoiceRepository;
     }
 
     public async Task<int?> BookAppointmentAsync(int userId, CreateAppointmentDto dto)
@@ -246,6 +249,31 @@ public class CustomerService : ICustomerService
         await _vehicleRepository.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId)
+    {
+        var vehicles = await GetMyVehiclesAsync(userId);
+        var appointments = await GetMyAppointmentsAsync(userId);
+        var partRequests = await GetMyPartRequestsAsync(userId);
+
+        var purchases = await _salesInvoiceRepository.FindAsync(s => s.CustomerId == userId);
+
+        return new CustomerHistoryDto
+        {
+            Vehicles = vehicles,
+            Appointments = appointments,
+            PartRequests = partRequests,
+            Purchases = purchases.Select(p => new SalesHistoryDto
+            {
+                Id = p.Id,
+                SaleDate = p.SaleDate,
+                TotalAmount = p.TotalAmount,
+                DiscountAmount = p.DiscountAmount,
+                FinalAmount = p.FinalAmount,
+                IsPaid = p.IsPaid
+            }).ToList()
+        };
     }
 
 
