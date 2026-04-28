@@ -9,25 +9,35 @@ public class SalesService : ISalesService
     private readonly IRepositoryBase<SalesInvoice> _invoiceRepo;
     private readonly IRepositoryBase<SalesInvoiceItem> _itemRepo;
     private readonly IRepositoryBase<VehiclePart> _partRepo;
+    private readonly IRepositoryBase<User> _userRepo;
 
     public SalesService(
         IRepositoryBase<SalesInvoice> invoiceRepo,
         IRepositoryBase<SalesInvoiceItem> itemRepo,
-        IRepositoryBase<VehiclePart> partRepo)
+        IRepositoryBase<VehiclePart> partRepo,
+        IRepositoryBase<User> userRepo)
     {
         _invoiceRepo = invoiceRepo;
         _itemRepo = itemRepo;
         _partRepo = partRepo;
+        _userRepo = userRepo;
     }
 
     public async Task<SalesInvoiceDto> SellPartsAsync(CreateSaleDto dto)
     {
+        // Loyalty program: discount is applied if the customer is loyal.
+        var customer = await _userRepo.GetByIdAsync(dto.CustomerId);
+        if (customer == null)
+            throw new Exception("Customer not found");
+
+        var isLoyalCustomer = customer.IsLoyal;
+
         var invoice = new SalesInvoice
         {
             CustomerId = dto.CustomerId,
             StaffId = dto.StaffId,
             SaleDate = DateTime.UtcNow,
-            IsPaid = true
+            IsPaid = dto.IsPaid ?? true
         };
 
         decimal totalAmount = 0;
@@ -68,19 +78,22 @@ public class SalesService : ISalesService
 
         invoice.TotalAmount = totalAmount;
 
-        if (totalAmount > 5000)
-        {
-            invoice.DiscountAmount = totalAmount * 0.10m;
-        }
-        else
-        {
-            invoice.DiscountAmount = 0;
-        }
+        // Applying loyalty discount (10%).
+        invoice.DiscountAmount = isLoyalCustomer ? invoice.TotalAmount * 0.10m : 0m;
 
         invoice.FinalAmount = invoice.TotalAmount - invoice.DiscountAmount;
 
         _invoiceRepo.Update(invoice);
         await _invoiceRepo.SaveChangesAsync();
+
+        // Updating customer lifetime spent amount (used to determine loyalty for future purchases).
+        // Only counting paid invoices as "spent"
+        if (invoice.IsPaid)
+        {
+            customer.TotalServiceSpent += invoice.FinalAmount;
+            _userRepo.Update(customer);
+            await _userRepo.SaveChangesAsync();
+        }
 
         return await GetSaleByIdAsync(invoice.Id)
                ?? throw new Exception("Invoice error");
@@ -96,7 +109,7 @@ public class SalesService : ISalesService
         {
             var items = await _itemRepo.FindAsync(i => i.SalesInvoiceId == inv.Id);
 
-            result.Add(new SalesInvoiceDto
+            var invoiceDto = new SalesInvoiceDto
             {
                 Id = inv.Id,
                 CustomerId = inv.CustomerId,
@@ -105,15 +118,23 @@ public class SalesService : ISalesService
                 TotalAmount = inv.TotalAmount,
                 DiscountAmount = inv.DiscountAmount,
                 FinalAmount = inv.FinalAmount,
-                IsPaid = inv.IsPaid,
+                IsPaid = inv.IsPaid
+            };
 
-                Items = items.Select(i => new SalesInvoiceItemDto
+            foreach (var item in items)
+            {
+                var part = await _partRepo.GetByIdAsync(item.VehiclePartId);
+
+                invoiceDto.Items.Add(new SalesInvoiceItemDto
                 {
-                    PartId = i.VehiclePartId,
-                    Quantity = i.Quantity,
-                    SalePrice = i.SalePrice
-                }).ToList()
-            });
+                    PartId = item.VehiclePartId,
+                    PartName = part?.Name ?? string.Empty,
+                    Quantity = item.Quantity,
+                    SalePrice = item.SalePrice
+                });
+            }
+
+            result.Add(invoiceDto);
         }
 
         return result;
@@ -127,7 +148,7 @@ public class SalesService : ISalesService
 
         var items = await _itemRepo.FindAsync(i => i.SalesInvoiceId == id);
 
-        return new SalesInvoiceDto
+        var invoiceDto = new SalesInvoiceDto
         {
             Id = inv.Id,
             CustomerId = inv.CustomerId,
@@ -136,14 +157,22 @@ public class SalesService : ISalesService
             TotalAmount = inv.TotalAmount,
             DiscountAmount = inv.DiscountAmount,
             FinalAmount = inv.FinalAmount,
-            IsPaid = inv.IsPaid,
-
-            Items = items.Select(i => new SalesInvoiceItemDto
-            {
-                PartId = i.VehiclePartId,
-                Quantity = i.Quantity,
-                SalePrice = i.SalePrice
-            }).ToList()
+            IsPaid = inv.IsPaid
         };
+
+        foreach (var item in items)
+        {
+            var part = await _partRepo.GetByIdAsync(item.VehiclePartId);
+
+            invoiceDto.Items.Add(new SalesInvoiceItemDto
+            {
+                PartId = item.VehiclePartId,
+                PartName = part?.Name ?? string.Empty,
+                Quantity = item.Quantity,
+                SalePrice = item.SalePrice
+            });
+        }
+
+        return invoiceDto;
     }
 }

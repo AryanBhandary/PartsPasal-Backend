@@ -3,6 +3,7 @@ using PartsPasal.Infrastructure.Data;
 using PartsPasal.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using PartsPasal.Domain.Entities;
@@ -56,9 +57,11 @@ public static class DependencyInjection
         // Register generic repository
         services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
 
-        // Register services here
+        // Setting up configuration for SMTP settings
+        services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
+
         // services.AddScoped<IAIService, AIService>();
-        // services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStaffManagementService, StaffManagementService>();
 
@@ -68,6 +71,14 @@ public static class DependencyInjection
         services.AddScoped<IPartService, PartService>();
         //register vendor service 
         services.AddScoped<IVendorService, VendorService>();
+
+        // Registering sales and invoice services
+        services.AddScoped<ISalesService, SalesService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+
+        // Registering notification and automation services
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ISystemAutomationService, SystemAutomationService>();
         //register purchase service
         services.AddScoped<IPurchaseService, PurchaseService>();
         return services;
