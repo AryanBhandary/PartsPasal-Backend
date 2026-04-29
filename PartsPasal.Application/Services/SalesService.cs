@@ -30,8 +30,6 @@ public class SalesService : ISalesService
         if (customer == null)
             throw new Exception("Customer not found");
 
-        var isLoyalCustomer = customer.IsLoyal;
-
         var invoice = new SalesInvoice
         {
             CustomerId = dto.CustomerId,
@@ -77,6 +75,12 @@ public class SalesService : ISalesService
         await _itemRepo.SaveChangesAsync();
 
         invoice.TotalAmount = totalAmount;
+
+        // Apply loyalty discount when invoice is created.
+        // Eligible if customer has already crossed threshold,
+        // or if this paid invoice pushes them over the threshold.
+        var isLoyalCustomer = customer.TotalServiceSpent > 5000m ||
+                              (invoice.IsPaid && (customer.TotalServiceSpent + invoice.TotalAmount) > 5000m);
 
         // Applying loyalty discount (10%).
         invoice.DiscountAmount = isLoyalCustomer ? invoice.TotalAmount * 0.10m : 0m;
