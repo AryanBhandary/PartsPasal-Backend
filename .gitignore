@@ -56,6 +56,7 @@ Desktop.ini
 # =========================
 .env
 .env.*
+PartsPasal/.env
 appsettings.Development.json
 appsettings.Local.json
 appsettings.json
