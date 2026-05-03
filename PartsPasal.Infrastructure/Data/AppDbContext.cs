@@ -37,28 +37,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         // Configuring specific constraints (DeleteBehavior.Restrict to avoid multiple cascade paths)
 
         modelBuilder.Entity<SalesInvoice>()
-            .HasOne(s => s.Customer).WithMany(u => u.Purchases).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(s => s.Customer).WithMany(u => u.Purchases)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SalesInvoice>()
-            .HasOne(s => s.Staff).WithMany(u => u.SalesHandled).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(s => s.Staff).WithMany(u => u.SalesHandled)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Appointment>()
-            .HasOne(a => a.User).WithMany(u => u.Appointments).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(a => a.User).WithMany(u => u.Appointments)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Appointment>()
-            .HasOne(a => a.Vehicle).WithMany(v => v.Appointments).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(a => a.Vehicle).WithMany(v => v.Appointments)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Review>()
-            .HasOne(r => r.User).WithMany(u => u.Reviews).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(r => r.User).WithMany(u => u.Reviews)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SalesInvoiceItem>()
-            .HasOne(si => si.VehiclePart).WithMany(vp => vp.SalesInvoiceItems).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(si => si.VehiclePart).WithMany(vp => vp.SalesInvoiceItems)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseInvoice>()
-            .HasOne(pi => pi.Vendor).WithMany(v => v.PurchaseInvoices).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(pi => pi.Vendor).WithMany(v => v.PurchaseInvoices)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseInvoiceItem>()
-            .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Seeding default roles
         modelBuilder.Entity<IdentityRole<int>>().HasData(

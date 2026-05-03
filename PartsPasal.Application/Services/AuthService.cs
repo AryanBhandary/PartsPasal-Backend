@@ -30,7 +30,7 @@ public class AuthService(
         {
             Name = dto.Name,
             Email = dto.Email,
-            UserName = dto.Email, // Identity requires UserName, we'll map Email to it
+            UserName = dto.Email,
             PhoneNumber = dto.Phone,
             Address = dto.Address,
             RegistrationDate = DateTime.UtcNow
