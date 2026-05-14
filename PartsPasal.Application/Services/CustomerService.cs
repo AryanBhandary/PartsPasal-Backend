@@ -282,6 +282,36 @@ public class CustomerService : ICustomerService
     }
 
 
+    public async Task<bool> UpdateVehicleByStaffAsync(int vehicleId, UpdateVehicleDto dto)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
+        if (vehicle == null) return false;
+
+        vehicle.LicensePlate = dto.LicensePlate;
+        vehicle.Model = dto.Model;
+        vehicle.Year = dto.Year;
+        vehicle.VIN = dto.VIN;
+        vehicle.LastServiceDate = dto.LastServiceDate.HasValue
+            ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
+            : null;
+        vehicle.Mileage = dto.Mileage;
+
+        _vehicleRepository.Update(vehicle);
+        await _vehicleRepository.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteVehicleByStaffAsync(int vehicleId)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
+        if (vehicle == null) return false;
+
+        _vehicleRepository.Delete(vehicle);
+        await _vehicleRepository.SaveChangesAsync();
+        return true;
+    }
+
+
     public async Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId)
     {
         var vehicles = await GetMyVehiclesAsync(userId);
@@ -433,5 +463,18 @@ public class CustomerService : ICustomerService
         }
 
         return result;
+    }
+
+    public async Task<bool> DeleteCustomerAsync(int id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
+            return false;
+            
+        // Assuming we cascade delete or delete related entities here 
+        // depending on the domain rules.
+        _userRepository.Delete(user);
+        await _userRepository.SaveChangesAsync();
+        return true;
     }
 }
