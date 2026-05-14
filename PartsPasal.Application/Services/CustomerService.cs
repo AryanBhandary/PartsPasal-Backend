@@ -11,19 +11,25 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<PartRequest> _partRequestRepository;
     private readonly IRepositoryBase<User> _userRepository;
     private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepository;
+    private readonly IRepositoryBase<SalesInvoiceItem> _salesInvoiceItemRepository;
+    private readonly IRepositoryBase<VehiclePart> _vehiclePartRepository;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
         IRepositoryBase<Vehicle> vehicleRepository,
         IRepositoryBase<PartRequest> partRequestRepository,
         IRepositoryBase<User> userRepository,
-        IRepositoryBase<SalesInvoice> salesInvoiceRepository)
+        IRepositoryBase<SalesInvoice> salesInvoiceRepository,
+        IRepositoryBase<SalesInvoiceItem> salesInvoiceItemRepository,
+        IRepositoryBase<VehiclePart> vehiclePartRepository)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
         _partRequestRepository = partRequestRepository;
         _userRepository = userRepository;
         _salesInvoiceRepository = salesInvoiceRepository;
+        _salesInvoiceItemRepository = salesInvoiceItemRepository;
+        _vehiclePartRepository = vehiclePartRepository;
     }
 
     // ================= EXISTING FEATURES =================
@@ -106,7 +112,8 @@ public class CustomerService : ICustomerService
         var request = new PartRequest
         {
             UserId = userId,
-            PartNameOrDescription = dto.PartNameOrDescription
+            PartName = dto.PartName,
+            Description = dto.Description
         };
 
         await _partRequestRepository.AddAsync(request);
@@ -122,7 +129,8 @@ public class CustomerService : ICustomerService
         return requests.Select(r => new PartRequestDto
         {
             Id = r.Id,
-            PartNameOrDescription = r.PartNameOrDescription,
+            PartName = r.PartName,
+            Description = r.Description,
             RequestDate = r.RequestDate,
             Status = r.Status.ToString()
         }).ToList();
@@ -166,6 +174,12 @@ public class CustomerService : ICustomerService
 
     public async Task<int> AddVehicleAsync(int userId, CreateVehicleDto dto)
     {
+        // Enforce VIN uniqueness across all vehicles in the system
+        var vinConflict = await _vehicleRepository.FindAsync(v =>
+            v.VIN != null && v.VIN == dto.VIN);
+        if (vinConflict.Any())
+            throw new InvalidOperationException("A vehicle with this VIN is already registered.");
+
         var vehicle = new Vehicle
         {
             UserId = userId,
@@ -211,6 +225,12 @@ public class CustomerService : ICustomerService
         if (vehicle == null)
             return false;
 
+        // Enforce VIN uniqueness — exclude the current vehicle from the check
+        var vinConflict = await _vehicleRepository.FindAsync(v =>
+            v.VIN != null && v.VIN == dto.VIN && v.Id != vehicleId);
+        if (vinConflict.Any())
+            throw new InvalidOperationException("A vehicle with this VIN is already registered.");
+
         vehicle.LicensePlate = dto.LicensePlate;
         vehicle.Model = dto.Model;
         vehicle.Year = dto.Year;
@@ -251,6 +271,20 @@ public class CustomerService : ICustomerService
 
         var purchases = await _salesInvoiceRepository.FindAsync(s => s.CustomerId == userId);
 
+        // Fetch all invoice items for this customer's invoices
+        var invoiceIds = purchases.Select(p => p.Id).ToList();
+        var allItems = await _salesInvoiceItemRepository.FindAsync(
+            item => invoiceIds.Contains(item.SalesInvoiceId));
+
+        // Fetch all unique parts referenced by these items
+        var partIds = allItems.Select(i => i.VehiclePartId).Distinct().ToList();
+        var allParts = await _vehiclePartRepository.FindAsync(p => partIds.Contains(p.Id));
+        var partNameMap = allParts.ToDictionary(p => p.Id, p => p.Name);
+
+        // Group items by invoice ID for quick lookup
+        var itemsByInvoice = allItems.GroupBy(i => i.SalesInvoiceId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         return new CustomerHistoryDto
         {
             Vehicles = vehicles,
@@ -263,7 +297,17 @@ public class CustomerService : ICustomerService
                 TotalAmount = p.TotalAmount,
                 DiscountAmount = p.DiscountAmount,
                 FinalAmount = p.FinalAmount,
-                IsPaid = p.IsPaid
+                IsPaid = p.IsPaid,
+                Items = itemsByInvoice.TryGetValue(p.Id, out var items)
+                    ? items.Select(i => new SalesInvoiceItemDto
+                    {
+                        PartName = partNameMap.TryGetValue(i.VehiclePartId, out var name)
+                            ? name
+                            : $"Part #{i.VehiclePartId}",
+                        Quantity = i.Quantity,
+                        SalePrice = i.SalePrice
+                    }).ToList()
+                    : new List<SalesInvoiceItemDto>()
             }).ToList()
         };
     }
