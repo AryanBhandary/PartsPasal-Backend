@@ -16,9 +16,9 @@ public class PartRequest
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
 
-    [Required]
-    [MaxLength(250)]
-    public string PartNameOrDescription { get; set; } = string.Empty;
+    public string PartName { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
 
     public DateTime RequestDate { get; set; } = DateTime.UtcNow;
 

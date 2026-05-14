@@ -1,6 +1,7 @@
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
+using PartsPasal.Domain.Enums;
 
 namespace PartsPasal.Application.Services;
 
@@ -106,7 +107,10 @@ public class CustomerService : ICustomerService
         var request = new PartRequest
         {
             UserId = userId,
-            PartNameOrDescription = dto.PartNameOrDescription
+            PartName = dto.PartName.Trim(),
+            Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+            RequestDate = DateTime.UtcNow,
+            Status = PartRequestStatus.Requested
         };
 
         await _partRequestRepository.AddAsync(request);
@@ -119,13 +123,18 @@ public class CustomerService : ICustomerService
     {
         var requests = await _partRequestRepository.FindAsync(r => r.UserId == userId);
 
-        return requests.Select(r => new PartRequestDto
-        {
-            Id = r.Id,
-            PartNameOrDescription = r.PartNameOrDescription,
-            RequestDate = r.RequestDate,
-            Status = r.Status.ToString()
-        }).ToList();
+        return requests
+            .OrderByDescending(r => r.RequestDate)
+            .ThenByDescending(r => r.Id)
+            .Select(r => new PartRequestDto
+            {
+                Id = r.Id,
+                PartName = r.PartName,
+                Description = r.Description,
+                RequestDate = r.RequestDate,
+                Status = r.Status.ToString()
+            })
+            .ToList();
     }
 
     public async Task<CustomerProfileDto?> GetProfileAsync(int userId)

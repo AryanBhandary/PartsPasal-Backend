@@ -3,7 +3,12 @@
 public class PartRequestDto
 {
     public int Id { get; set; }
-    public string PartNameOrDescription { get; set; } = string.Empty;
+
+    public string PartName { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+
     public DateTime RequestDate { get; set; }
+
     public string Status { get; set; } = string.Empty;
 }
