@@ -1,10 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace PartsPasal.Application.DTOs.Customer;
 
 public class CreatePartRequestDto
 {
-    [Required]
-    [MaxLength(250)]
-    public string PartNameOrDescription { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Part name is required.")]
+    [MaxLength(150)]
+    public string PartName { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Description { get; set; }
 }
