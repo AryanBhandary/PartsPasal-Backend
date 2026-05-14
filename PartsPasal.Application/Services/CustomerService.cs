@@ -10,17 +10,20 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<Vehicle> _vehicleRepository;
     private readonly IRepositoryBase<PartRequest> _partRequestRepository;
     private readonly IRepositoryBase<User> _userRepository;
+    private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepository;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
         IRepositoryBase<Vehicle> vehicleRepository,
         IRepositoryBase<PartRequest> partRequestRepository,
-        IRepositoryBase<User> userRepository)
+        IRepositoryBase<User> userRepository,
+        IRepositoryBase<SalesInvoice> salesInvoiceRepository)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
         _partRequestRepository = partRequestRepository;
         _userRepository = userRepository;
+        _salesInvoiceRepository = salesInvoiceRepository;
     }
 
     // ================= EXISTING FEATURES =================
@@ -240,6 +243,62 @@ public class CustomerService : ICustomerService
         return true;
     }
 
+    public async Task<bool> UpdateVehicleByStaffAsync(int vehicleId, UpdateVehicleDto dto)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
+        if (vehicle == null) return false;
+
+        vehicle.LicensePlate = dto.LicensePlate;
+        vehicle.Model = dto.Model;
+        vehicle.Year = dto.Year;
+        vehicle.VIN = dto.VIN;
+        vehicle.LastServiceDate = dto.LastServiceDate.HasValue
+            ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
+            : null;
+        vehicle.Mileage = dto.Mileage;
+
+        _vehicleRepository.Update(vehicle);
+        await _vehicleRepository.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteVehicleByStaffAsync(int vehicleId)
+    {
+        var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
+        if (vehicle == null) return false;
+
+        _vehicleRepository.Delete(vehicle);
+        await _vehicleRepository.SaveChangesAsync();
+        return true;
+    }
+
+
+    public async Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId)
+    {
+        var vehicles = await GetMyVehiclesAsync(userId);
+        var appointments = await GetMyAppointmentsAsync(userId);
+        var partRequests = await GetMyPartRequestsAsync(userId);
+
+        var purchases = await _salesInvoiceRepository.FindAsync(s => s.CustomerId == userId);
+
+        return new CustomerHistoryDto
+        {
+            Vehicles = vehicles,
+            Appointments = appointments,
+            PartRequests = partRequests,
+            Purchases = purchases.Select(p => new SalesHistoryDto
+            {
+                Id = p.Id,
+                SaleDate = p.SaleDate,
+                TotalAmount = p.TotalAmount,
+                DiscountAmount = p.DiscountAmount,
+                FinalAmount = p.FinalAmount,
+                IsPaid = p.IsPaid
+            }).ToList()
+        };
+    }
+
+
     // ================= STAFF FEATURES =================
 
     public async Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto)
@@ -367,5 +426,18 @@ public class CustomerService : ICustomerService
         }
 
         return result;
+    }
+
+    public async Task<bool> DeleteCustomerAsync(int id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
+            return false;
+            
+        // Assuming we cascade delete or delete related entities here 
+        // depending on the domain rules.
+        _userRepository.Delete(user);
+        await _userRepository.SaveChangesAsync();
+        return true;
     }
 }

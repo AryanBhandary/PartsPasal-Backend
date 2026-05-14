@@ -1,4 +1,4 @@
-﻿using PartsPasal.Application.DTOs.Customer;
+using PartsPasal.Application.DTOs.Customer;
 
 namespace PartsPasal.Application.Interfaces;
 
@@ -39,6 +39,18 @@ public interface ICustomerService
     // Delete a vehicle
     Task<bool> DeleteVehicleAsync(int userId, int vehicleId);
 
+    // Staff: Update vehicle
+    Task<bool> UpdateVehicleByStaffAsync(int vehicleId, UpdateVehicleDto dto);
+
+    // Staff: Delete vehicle
+    Task<bool> DeleteVehicleByStaffAsync(int vehicleId);
+
+
+    // Get customer history
+    Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId);
+
+
+
     // Staff: Register new customer with vehicle
     Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto);
 
@@ -50,4 +62,8 @@ public interface ICustomerService
 
     // Staff: Search customers (name, phone, id, vehicle number)
     Task<List<CustomerProfileDto>> SearchCustomersAsync(string query);
+
+    // Staff: Delete customer
+    Task<bool> DeleteCustomerAsync(int id);
+
 }
