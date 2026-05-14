@@ -56,6 +56,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(r => r.User).WithMany(u => u.Reviews)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<PartRequest>()
+            .HasOne(p => p.User).WithMany(u => u.PartRequests)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<SalesInvoiceItem>()
             .HasOne(si => si.VehiclePart).WithMany(vp => vp.SalesInvoiceItems)
             .OnDelete(DeleteBehavior.Restrict);
