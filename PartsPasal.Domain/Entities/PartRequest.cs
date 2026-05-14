@@ -17,11 +17,8 @@ public class PartRequest
     public User User { get; set; } = null!;
 
     [Required]
-    [MaxLength(150)]
-    public string PartName { get; set; } = string.Empty;
-
-    [MaxLength(500)]
-    public string? Description { get; set; }
+    [MaxLength(250)]
+    public string PartNameOrDescription { get; set; } = string.Empty;
 
     public DateTime RequestDate { get; set; } = DateTime.UtcNow;
 

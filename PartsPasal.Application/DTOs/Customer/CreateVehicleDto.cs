@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PartsPasal.Application.DTOs.Customer;
 
@@ -15,9 +15,8 @@ public class CreateVehicleDto
     [Range(1900, 2100)]
     public int Year { get; set; }
 
-    [Required(ErrorMessage = "VIN is required.")]
     [MaxLength(50)]
-    public string VIN { get; set; } = string.Empty;
+    public string? VIN { get; set; }
 
     public DateTime? LastServiceDate { get; set; }
 

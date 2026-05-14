@@ -217,20 +217,13 @@ public class CustomerController : ControllerBase
             return Unauthorized("Invalid user ID in token.");
         }
 
-        try
-        {
-            var vehicleId = await _customerService.AddVehicleAsync(userId, dto);
+        var vehicleId = await _customerService.AddVehicleAsync(userId, dto);
 
-            return Ok(new
-            {
-                message = "Vehicle added successfully.",
-                vehicleId
-            });
-        }
-        catch (InvalidOperationException ex)
+        return Ok(new
         {
-            return BadRequest(new { message = ex.Message });
-        }
+            message = "Vehicle added successfully.",
+            vehicleId
+        });
     }
 
     [HttpGet("vehicles")]
@@ -268,24 +261,17 @@ public class CustomerController : ControllerBase
             return Unauthorized("Invalid user ID in token.");
         }
 
-        try
-        {
-            var updated = await _customerService.UpdateVehicleAsync(userId, id, dto);
+        var updated = await _customerService.UpdateVehicleAsync(userId, id, dto);
 
-            if (!updated)
-            {
-                return NotFound(new { message = "Vehicle not found." });
-            }
-
-            return Ok(new
-            {
-                message = "Vehicle updated successfully."
-            });
-        }
-        catch (InvalidOperationException ex)
+        if (!updated)
         {
-            return BadRequest(new { message = ex.Message });
+            return NotFound("Vehicle not found.");
         }
+
+        return Ok(new
+        {
+            message = "Vehicle updated successfully."
+        });
     }
 
     [HttpDelete("vehicles/{id}")]
