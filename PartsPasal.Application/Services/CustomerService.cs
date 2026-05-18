@@ -45,8 +45,6 @@ public class CustomerService : ICustomerService
         {
             UserId = userId,
             VehicleId = dto.VehicleId,
-            // Npgsql requires DateTimeKind.Utc for 'timestamp with time zone' columns.
-            // JSON deserialization produces DateTimeKind.Unspecified, so we normalize here.
             AppointmentDate = DateTime.SpecifyKind(dto.AppointmentDate, DateTimeKind.Utc),
             Description = dto.Description
         };
@@ -283,7 +281,6 @@ public class CustomerService : ICustomerService
         return true;
     }
 
-
     public async Task<bool> UpdateVehicleByStaffAsync(int vehicleId, UpdateVehicleDto dto)
     {
         var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
@@ -314,6 +311,7 @@ public class CustomerService : ICustomerService
     }
 
 
+
     public async Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId)
     {
         var vehicles = await GetMyVehiclesAsync(userId);
@@ -339,16 +337,13 @@ public class CustomerService : ICustomerService
         };
     }
 
-
     // ================= STAFF FEATURES =================
 
     public async Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto)
     {
         var existingUser = await _userManager.FindByEmailAsync(dto.Email);
         if (existingUser != null)
-        {
             throw new InvalidOperationException("User with this email already exists.");
-        }
 
         var user = new User
         {
@@ -477,9 +472,9 @@ public class CustomerService : ICustomerService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
             return false;
-            
         // Assuming we cascade delete or delete related entities here 
         // depending on the domain rules.
+
         _userRepository.Delete(user);
         await _userRepository.SaveChangesAsync();
         return true;

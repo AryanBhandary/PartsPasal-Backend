@@ -74,5 +74,4 @@ public interface ICustomerService
 
     // Staff: Delete customer
     Task<bool> DeleteCustomerAsync(int id);
-
 }
