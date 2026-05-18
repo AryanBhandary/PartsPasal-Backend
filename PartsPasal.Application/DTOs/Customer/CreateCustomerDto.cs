@@ -1,13 +1,26 @@
-﻿namespace PartsPasal.Application.DTOs.Customer;
+using System.ComponentModel.DataAnnotations;
+
+namespace PartsPasal.Application.DTOs.Customer;
 
 public class CreateCustomerDto
 {
+    [Required]
+    [MaxLength(100)]
     public string Name { get; set; } = string.Empty;   
-    public string? Email { get; set; }
-    public string? PhoneNumber { get; set; }
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [Phone]
+    [MaxLength(20)]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+    [MaxLength(300)]
     public string? Address { get; set; }
 
-    public string LicensePlate { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    public int Year { get; set; }
+    [Required]
+    [MinLength(6)]
+    public string Password { get; set; } = string.Empty;
 }
