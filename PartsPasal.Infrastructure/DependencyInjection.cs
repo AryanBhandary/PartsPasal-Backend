@@ -86,6 +86,7 @@ public static class DependencyInjection
         
         //register purchase service
         services.AddScoped<IPurchaseService, PurchaseService>();
+        services.AddScoped<IReportingService, ReportingService>();
         return services;
     }
 }

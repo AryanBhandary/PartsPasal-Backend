@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.DTOs.Staff;
 using PartsPasal.Application.Interfaces;
+using PartsPasal.Infrastructure.Services;
 
 namespace PartsPasal.Controllers;
 
@@ -12,9 +13,12 @@ namespace PartsPasal.Controllers;
 [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/[controller]")]
-public class AdminController(IStaffManagementService staffManagementService) : ControllerBase
+public class AdminController(
+    IStaffManagementService staffManagementService,
+    IReportingService reportingService) : ControllerBase
 {
     private readonly IStaffManagementService _staffManagementService = staffManagementService;
+    private readonly IReportingService _reportingService = reportingService;
 
     [HttpPost("staffs")]
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffDto dto)
@@ -79,7 +83,52 @@ public class AdminController(IStaffManagementService staffManagementService) : C
         return Ok(new { result.Message });
     }
 
-    // [HttpGet("reports/financial")] - View financial reports (daily, monthly, yearly)
+    [HttpGet("reports/financial")]
+    public async Task<IActionResult> GetFinancialReport(
+        [FromQuery] string type = "daily",
+        [FromQuery] string format = "json")
+    {
+        var report = await _reportingService.GetFinancialReportAsync(type);
+        return ToReportResult(report, $"financial-{type}", format, ReportCsvExporter.ToCsvBytes(report));
+    }
+
+    [HttpGet("reports/customers/regulars")]
+    public async Task<IActionResult> GetRegularCustomersReport([FromQuery] string format = "json")
+    {
+        var report = await _reportingService.GetRegularCustomersReportAsync();
+        return ToReportResult(report, "customers-regulars", format, ReportCsvExporter.ToCsvBytes(report));
+    }
+
+    [HttpGet("reports/customers/high-spenders")]
+    public async Task<IActionResult> GetHighSpendersReport(
+        [FromQuery] int limit = 25,
+        [FromQuery] string format = "json")
+    {
+        var report = await _reportingService.GetHighSpendersReportAsync(limit);
+        return ToReportResult(report, "customers-high-spenders", format, ReportCsvExporter.ToCsvBytes(report));
+    }
+
+    [HttpGet("reports/customers/pending-credits")]
+    public async Task<IActionResult> GetPendingCreditsReport([FromQuery] string format = "json")
+    {
+        var report = await _reportingService.GetPendingCreditsReportAsync();
+        return ToReportResult(report, "customers-pending-credits", format, ReportCsvExporter.ToCsvBytes(report));
+    }
+
+    private IActionResult ToReportResult<T>(T report, string fileName, string format, byte[] csvBytes)
+    {
+        if (IsCsvFormat(format))
+        {
+            return File(csvBytes, "text/csv", $"{fileName}-{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
+        return Ok(report);
+    }
+
+    private static bool IsCsvFormat(string format) =>
+        format.Equals("csv", StringComparison.OrdinalIgnoreCase) ||
+        format.Equals("download", StringComparison.OrdinalIgnoreCase);
+
     // [HttpGet("inventory/status")] - View overall inventory and low stock alerts
     // [HttpPost("purchase-invoice")] - Create purchase invoices for stock updates
     // [HttpDelete("vendors/{id}")] - Manage vendor details (CRUD)
