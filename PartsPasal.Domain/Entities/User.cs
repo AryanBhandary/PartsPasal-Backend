@@ -21,9 +21,6 @@ public class User : IdentityUser<int>
     // Total amount the customer has spent on services/parts
     public decimal TotalServiceSpent { get; set; }
 
-    // Customer qualifies for loyalty discount if TotalServiceSpent exceeds 5000
-    public bool IsLoyal => TotalServiceSpent > 5000;
-
     // Staff specific fields
     [MaxLength(150)]
     public string? SpecializedSkill { get; set; }

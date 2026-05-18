@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using PartsPasal.Application.DTOs.Sales;
 using PartsPasal.Application.Interfaces;
 
 namespace PartsPasal.Controllers;
 
+[Authorize(Roles = "Staff,Admin")]
 [Route("api/sales")]
 [ApiController]
 public class SalesController : ControllerBase

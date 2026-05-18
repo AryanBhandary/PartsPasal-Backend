@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
+using PartsPasal.Domain.Enums;
 
 namespace PartsPasal.Application.Services;
 
@@ -11,19 +13,22 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<PartRequest> _partRequestRepository;
     private readonly IRepositoryBase<User> _userRepository;
     private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepository;
+    private readonly UserManager<User> _userManager;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
         IRepositoryBase<Vehicle> vehicleRepository,
         IRepositoryBase<PartRequest> partRequestRepository,
         IRepositoryBase<User> userRepository,
-        IRepositoryBase<SalesInvoice> salesInvoiceRepository)
+        IRepositoryBase<SalesInvoice> salesInvoiceRepository,
+        UserManager<User> userManager)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
         _partRequestRepository = partRequestRepository;
         _userRepository = userRepository;
         _salesInvoiceRepository = salesInvoiceRepository;
+        _userManager = userManager;
     }
 
     // ================= EXISTING FEATURES =================
@@ -40,8 +45,6 @@ public class CustomerService : ICustomerService
         {
             UserId = userId,
             VehicleId = dto.VehicleId,
-            // Npgsql requires DateTimeKind.Utc for 'timestamp with time zone' columns.
-            // JSON deserialization produces DateTimeKind.Unspecified, so we normalize here.
             AppointmentDate = DateTime.SpecifyKind(dto.AppointmentDate, DateTimeKind.Utc),
             Description = dto.Description
         };
@@ -106,7 +109,10 @@ public class CustomerService : ICustomerService
         var request = new PartRequest
         {
             UserId = userId,
-            PartNameOrDescription = dto.PartNameOrDescription
+            PartName = dto.PartName.Trim(),
+            Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+            RequestDate = DateTime.UtcNow,
+            Status = PartRequestStatus.Requested
         };
 
         await _partRequestRepository.AddAsync(request);
@@ -119,18 +125,53 @@ public class CustomerService : ICustomerService
     {
         var requests = await _partRequestRepository.FindAsync(r => r.UserId == userId);
 
-        return requests.Select(r => new PartRequestDto
-        {
-            Id = r.Id,
-            PartNameOrDescription = r.PartNameOrDescription,
-            RequestDate = r.RequestDate,
-            Status = r.Status.ToString()
-        }).ToList();
+        return requests
+            .OrderByDescending(r => r.RequestDate)
+            .ThenByDescending(r => r.Id)
+            .Select(r => new PartRequestDto
+            {
+                Id = r.Id,
+                PartName = r.PartName,
+                Description = r.Description,
+                RequestDate = r.RequestDate,
+                Status = r.Status.ToString()
+            })
+            .ToList();
+    }
+
+    public async Task<List<PartRequestDto>> GetAllPartRequestsAsync()
+    {
+        var requests = await _partRequestRepository.GetAllAsync();
+
+        return requests
+            .OrderByDescending(r => r.RequestDate)
+            .ThenByDescending(r => r.Id)
+            .Select(r => new PartRequestDto
+            {
+                Id = r.Id,
+                PartName = r.PartName,
+                Description = r.Description,
+                RequestDate = r.RequestDate,
+                Status = r.Status.ToString()
+            })
+            .ToList();
+    }
+
+    public async Task<bool> UpdatePartRequestStatusAsync(int requestId, PartRequestStatus status)
+    {
+        var request = await _partRequestRepository.GetByIdAsync(requestId);
+        if (request == null) return false;
+
+        request.Status = status;
+        _partRequestRepository.Update(request);
+        await _partRequestRepository.SaveChangesAsync();
+
+        return true;
     }
 
     public async Task<CustomerProfileDto?> GetProfileAsync(int userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user == null)
             return null;
@@ -143,14 +184,13 @@ public class CustomerService : ICustomerService
             PhoneNumber = user.PhoneNumber,
             Address = user.Address,
             RegistrationDate = user.RegistrationDate,
-            TotalServiceSpent = user.TotalServiceSpent,
-            IsLoyal = user.IsLoyal
+            TotalServiceSpent = user.TotalServiceSpent
         };
     }
 
     public async Task<bool> UpdateProfileAsync(int userId, UpdateCustomerProfileDto dto)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user == null)
             return false;
@@ -159,10 +199,8 @@ public class CustomerService : ICustomerService
         user.PhoneNumber = dto.PhoneNumber;
         user.Address = dto.Address;
 
-        _userRepository.Update(user);
-        await _userRepository.SaveChangesAsync();
-
-        return true;
+        var result = await _userManager.UpdateAsync(user);
+        return result.Succeeded;
     }
 
     public async Task<int> AddVehicleAsync(int userId, CreateVehicleDto dto)
@@ -272,7 +310,6 @@ public class CustomerService : ICustomerService
         return true;
     }
 
-
     public async Task<CustomerHistoryDto> GetCustomerHistoryAsync(int userId)
     {
         var vehicles = await GetMyVehiclesAsync(userId);
@@ -298,42 +335,40 @@ public class CustomerService : ICustomerService
         };
     }
 
-
     // ================= STAFF FEATURES =================
 
     public async Task<int> RegisterCustomerByStaffAsync(CreateCustomerDto dto)
     {
+        var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+        if (existingUser != null)
+            throw new InvalidOperationException("User with this email already exists.");
+
         var user = new User
         {
             Name = dto.Name,
             Email = dto.Email,
+            UserName = dto.Email,
             PhoneNumber = dto.PhoneNumber,
             Address = dto.Address,
             RegistrationDate = DateTime.UtcNow,
             TotalServiceSpent = 0
         };
 
-        await _userRepository.AddAsync(user);
-        await _userRepository.SaveChangesAsync();
-
-        var vehicle = new Vehicle
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded)
         {
-            UserId = user.Id,
-            LicensePlate = dto.LicensePlate,
-            Model = dto.Model,
-            Year = dto.Year
-        };
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Registration failed: {errors}");
+        }
 
-        await _vehicleRepository.AddAsync(vehicle);
-        await _vehicleRepository.SaveChangesAsync();
+        await _userManager.AddToRoleAsync(user, nameof(UserRole.Customer));
 
         return user.Id;
     }
 
     public async Task<List<CustomerProfileDto>> GetAllCustomersAsync()
     {
-        var users = await _userRepository.GetAllAsync();
-
+        var users = await _userManager.GetUsersInRoleAsync(nameof(UserRole.Customer));
         var result = new List<CustomerProfileDto>();
 
         foreach (var user in users)
@@ -349,7 +384,6 @@ public class CustomerService : ICustomerService
                 Address = user.Address,
                 RegistrationDate = user.RegistrationDate,
                 TotalServiceSpent = user.TotalServiceSpent,
-                IsLoyal = user.IsLoyal,
                 Vehicles = vehicles.Select(v => new VehicleDto
                 {
                     Id = v.Id,
@@ -368,9 +402,13 @@ public class CustomerService : ICustomerService
 
     public async Task<CustomerProfileDto?> GetCustomerByIdAsync(int id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await _userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
+            return null;
+
+        var isCustomer = await _userManager.IsInRoleAsync(user, nameof(UserRole.Customer));
+        if (!isCustomer)
             return null;
 
         var vehicles = await _vehicleRepository.FindAsync(v => v.UserId == id);
@@ -384,7 +422,6 @@ public class CustomerService : ICustomerService
             Address = user.Address,
             RegistrationDate = user.RegistrationDate,
             TotalServiceSpent = user.TotalServiceSpent,
-            IsLoyal = user.IsLoyal,
             Vehicles = vehicles.Select(v => new VehicleDto
             {
                 Id = v.Id,
@@ -400,7 +437,7 @@ public class CustomerService : ICustomerService
 
     public async Task<List<CustomerProfileDto>> SearchCustomersAsync(string query)
     {
-        var users = await _userRepository.GetAllAsync();
+        var users = await _userManager.GetUsersInRoleAsync(nameof(UserRole.Customer));
 
         var matchedUsers = users.Where(u =>
             u.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
@@ -433,9 +470,7 @@ public class CustomerService : ICustomerService
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
             return false;
-            
-        // Assuming we cascade delete or delete related entities here 
-        // depending on the domain rules.
+
         _userRepository.Delete(user);
         await _userRepository.SaveChangesAsync();
         return true;

@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<PurchaseInvoiceItem> PurchaseInvoiceItems => Set<PurchaseInvoiceItem>();
     public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
     public DbSet<SalesInvoiceItem> SalesInvoiceItems => Set<SalesInvoiceItem>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<PartRequest> PartRequests => Set<PartRequest>();
     public DbSet<Review> Reviews => Set<Review>();
@@ -23,7 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     {
         base.OnModelCreating(modelBuilder);
 
-        // 1. Configure decimal precision for monetary columns
+        // Configuring decimal precision for monetary columns
         modelBuilder.Entity<VehiclePart>().Property(p => p.Price).HasPrecision(18, 2);
         modelBuilder.Entity<SalesInvoice>().Property(s => s.TotalAmount).HasPrecision(18, 2);
         modelBuilder.Entity<SalesInvoice>().Property(s => s.DiscountAmount).HasPrecision(18, 2);
@@ -33,37 +34,46 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         modelBuilder.Entity<PurchaseInvoiceItem>().Property(pi => pi.UnitPrice).HasPrecision(18, 2);
         modelBuilder.Entity<User>().Property(u => u.TotalServiceSpent).HasPrecision(18, 2);
 
-        // 2. Ignore computed properties
-        modelBuilder.Entity<User>().Ignore(u => u.IsLoyal);
-
-        // 3. Configure specific constraints (DeleteBehavior.Restrict to avoid multiple cascade paths)
-        // Everything else (like Cascade deletes on required foreign keys) is handled by EF Core conventions!
+        // Configuring specific constraints (DeleteBehavior.Restrict to avoid multiple cascade paths)
 
         modelBuilder.Entity<SalesInvoice>()
-            .HasOne(s => s.Customer).WithMany(u => u.Purchases).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(s => s.Customer).WithMany(u => u.Purchases)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SalesInvoice>()
-            .HasOne(s => s.Staff).WithMany(u => u.SalesHandled).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(s => s.Staff).WithMany(u => u.SalesHandled)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Appointment>()
-            .HasOne(a => a.User).WithMany(u => u.Appointments).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(a => a.User).WithMany(u => u.Appointments)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Appointment>()
-            .HasOne(a => a.Vehicle).WithMany(v => v.Appointments).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(a => a.Vehicle).WithMany(v => v.Appointments)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Review>()
-            .HasOne(r => r.User).WithMany(u => u.Reviews).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(r => r.User).WithMany(u => u.Reviews)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PartRequest>()
+            .HasOne(p => p.User).WithMany(u => u.PartRequests)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SalesInvoiceItem>()
-            .HasOne(si => si.VehiclePart).WithMany(vp => vp.SalesInvoiceItems).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(si => si.VehiclePart).WithMany(vp => vp.SalesInvoiceItems)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseInvoice>()
-            .HasOne(pi => pi.Vendor).WithMany(v => v.PurchaseInvoices).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(pi => pi.Vendor).WithMany(v => v.PurchaseInvoices)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseInvoiceItem>()
-            .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems).OnDelete(DeleteBehavior.Restrict);
+            .HasOne(pii => pii.VehiclePart).WithMany(vp => vp.PurchaseInvoiceItems)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // 4. Seed default roles
+        // Seeding default roles
         modelBuilder.Entity<IdentityRole<int>>().HasData(
             new IdentityRole<int> { Id = 1, Name = nameof(UserRole.Customer), NormalizedName = "CUSTOMER", ConcurrencyStamp = "customer-role-stamp" },
             new IdentityRole<int> { Id = 2, Name = nameof(UserRole.Staff), NormalizedName = "STAFF", ConcurrencyStamp = "staff-role-stamp" },

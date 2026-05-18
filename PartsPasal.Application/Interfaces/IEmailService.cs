@@ -5,6 +5,13 @@ namespace PartsPasal.Application.Interfaces;
 /// </summary>
 public interface IEmailService
 {
-    // Task SendInvoiceEmailAsync(string customerEmail, int invoiceId);
-    // Task SendCreditReminderEmailAsync(string customerEmail); // For > 1 month unpaid
+    /// <summary>
+    /// Sends an invoice email (including an attached PDF(optional)) to the customer.
+    /// </summary>
+    Task SendInvoiceEmailAsync(string customerEmail, int invoiceId);
+
+    /// <summary>
+    /// Sends a reminder email for unpaid credits.
+    /// </summary>
+    Task SendCreditReminderEmailAsync(string customerEmail);
 }

@@ -3,6 +3,7 @@ using System;
 namespace PartsPasal.Application.DTOs.Customer;
 
 public class SalesHistoryDto
+
 {
     public int Id { get; set; }
     public DateTime SaleDate { get; set; }

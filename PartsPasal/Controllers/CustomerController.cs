@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.Interfaces;
+using PartsPasal.Domain.Enums;
 
 namespace PartsPasal.Controllers;
 
@@ -111,17 +112,41 @@ public class CustomerController : ControllerBase
         });
     }
 
+    [Authorize(Roles = nameof(UserRole.Customer))]
     [HttpPost("part-requests")]
-    public async Task<IActionResult> CreatePartRequest(CreatePartRequestDto dto)
+    public async Task<IActionResult> CreatePartRequest([FromBody] CreatePartRequestDto dto)
     {
-        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(userIdText))
+        if (dto == null)
         {
-            return Unauthorized("User ID not found in token.");
+            return BadRequest(new { message = "Request body is required." });
         }
 
-        var userId = int.Parse(userIdText);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText) || !int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("User ID not found or invalid in token.");
+        }
+
+        dto.PartName = dto.PartName.Trim();
+        if (string.IsNullOrEmpty(dto.PartName))
+        {
+            return BadRequest(new { message = "Part name is required." });
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Description))
+        {
+            dto.Description = dto.Description.Trim();
+        }
+        else
+        {
+            dto.Description = null;
+        }
 
         var requestId = await _customerService.CreatePartRequestAsync(userId, dto);
 
@@ -132,17 +157,16 @@ public class CustomerController : ControllerBase
         });
     }
 
+    [Authorize(Roles = nameof(UserRole.Customer))]
     [HttpGet("part-requests")]
     public async Task<IActionResult> GetMyPartRequests()
     {
         var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrEmpty(userIdText))
+        if (string.IsNullOrEmpty(userIdText) || !int.TryParse(userIdText, out var userId))
         {
-            return Unauthorized("User ID not found in token.");
+            return Unauthorized("User ID not found or invalid in token.");
         }
-
-        var userId = int.Parse(userIdText);
 
         var requests = await _customerService.GetMyPartRequestsAsync(userId);
 
@@ -300,5 +324,26 @@ public class CustomerController : ControllerBase
         {
             message = "Vehicle deleted successfully."
         });
+    }
+
+    
+    [HttpGet("history")]
+    public async Task<IActionResult> GetCustomerHistory()
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userIdText))
+        {
+            return Unauthorized("User ID not found in token.");
+        }
+
+        if (!int.TryParse(userIdText, out var userId))
+        {
+            return Unauthorized("Invalid user ID in token.");
+        }
+
+        var history = await _customerService.GetCustomerHistoryAsync(userId);
+
+        return Ok(history);
     }
 }

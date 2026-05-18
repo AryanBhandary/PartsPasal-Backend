@@ -1,3 +1,5 @@
+using PartsPasal.Application.DTOs.Reports;
+
 namespace PartsPasal.Application.Interfaces;
 
 /// <summary>
@@ -5,7 +7,8 @@ namespace PartsPasal.Application.Interfaces;
 /// </summary>
 public interface IReportingService
 {
-    // Task<object> GetFinancialReportAsync(string period); // Daily, Monthly, Yearly
-    // Task<object> GetTopSpendersReportAsync();
-    // Task<object> GetPendingCreditsReportAsync();
+    Task<FinancialReportDto> GetFinancialReportAsync(string periodType);
+    Task<CustomerListReportDto> GetRegularCustomersReportAsync();
+    Task<CustomerListReportDto> GetHighSpendersReportAsync(int limit = 25);
+    Task<PendingCreditsReportDto> GetPendingCreditsReportAsync();
 }

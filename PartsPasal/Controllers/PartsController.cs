@@ -7,7 +7,6 @@ namespace PartsPasal.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
 public class PartsController : ControllerBase
 {
     private readonly IPartService _partService;
@@ -17,7 +16,31 @@ public class PartsController : ControllerBase
         _partService = partService;
     }
 
+    /// <summary>
+    /// Public endpoint for customers to browse available (in-stock) parts.
+    /// </summary>
+    [HttpGet("available")]
+    [Authorize(Roles = "Customer,Staff,Admin")]
+    public async Task<IActionResult> GetAvailableParts()
+    {
+        var parts = await _partService.GetAllPartsAsync();
+        var available = parts
+            .Where(p => p.StockQuantity > 0)
+            .Select(p => new
+            {
+                p.Id,
+                p.Name,
+                p.Description,
+                p.Category,
+                p.Price,
+                p.StockQuantity
+            })
+            .ToList();
+        return Ok(available);
+    }
+
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreatePart(CreatePartDto dto)
     {
         var id = await _partService.CreatePartAsync(dto);
@@ -30,6 +53,7 @@ public class PartsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllParts()
     {
         var parts = await _partService.GetAllPartsAsync();
@@ -37,6 +61,7 @@ public class PartsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetPartById(int id)
     {
         var part = await _partService.GetPartByIdAsync(id);
@@ -48,6 +73,7 @@ public class PartsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdatePart(int id, UpdatePartDto dto)
     {
         var result = await _partService.UpdatePartAsync(id, dto);
@@ -62,6 +88,7 @@ public class PartsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeletePart(int id)
     {
         var result = await _partService.DeletePartAsync(id);

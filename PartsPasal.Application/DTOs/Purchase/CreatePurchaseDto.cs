@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace PartsPasal.Application.DTOs.Purchase
+namespace PartsPasal.Application.DTOs.Purchase;
+
+public class CreatePurchaseDto
 {
-    internal class CreatePurchaseDto
-    {
-    }
+    [Required]
+    public int VendorId { get; set; }
+
+    [Required]
+    public List<CreatePurchaseItemDto> Items { get; set; } = new();
 }

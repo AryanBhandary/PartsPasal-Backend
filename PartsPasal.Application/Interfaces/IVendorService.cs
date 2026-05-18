@@ -1,4 +1,5 @@
-﻿using PartsPasal.Application.DTOs.Vendor;
+using PartsPasal.Application.DTOs.Vendor;
+using PartsPasal.Application.DTOs.Inventory;
 
 namespace PartsPasal.Application.Interfaces;
 
@@ -14,5 +15,5 @@ public interface IVendorService
 
     Task<bool> DeleteVendorAsync(int id);
 
-    Task<List<VendorDto>> GetVendorsWithPartsAsync(int vendorId);
+    Task<List<PartDto>> GetVendorsWithPartsAsync(int vendorId);
 }

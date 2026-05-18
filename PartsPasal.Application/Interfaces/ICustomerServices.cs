@@ -21,6 +21,12 @@ public interface ICustomerService
     // Get a list of part requests for the user
     Task<List<PartRequestDto>> GetMyPartRequestsAsync(int userId);
 
+    // Admin: Get all part requests
+    Task<List<PartRequestDto>> GetAllPartRequestsAsync();
+
+    // Admin: Update part request status
+    Task<bool> UpdatePartRequestStatusAsync(int requestId, PartsPasal.Domain.Enums.PartRequestStatus status);
+
     // Get the profile information of the user
     Task<CustomerProfileDto?> GetProfileAsync(int userId);
 
@@ -39,11 +45,13 @@ public interface ICustomerService
     // Delete a vehicle
     Task<bool> DeleteVehicleAsync(int userId, int vehicleId);
 
+
     // Staff: Update vehicle
     Task<bool> UpdateVehicleByStaffAsync(int vehicleId, UpdateVehicleDto dto);
 
     // Staff: Delete vehicle
     Task<bool> DeleteVehicleByStaffAsync(int vehicleId);
+
 
 
     // Get customer history
@@ -63,7 +71,9 @@ public interface ICustomerService
     // Staff: Search customers (name, phone, id, vehicle number)
     Task<List<CustomerProfileDto>> SearchCustomersAsync(string query);
 
+
     // Staff: Delete customer
     Task<bool> DeleteCustomerAsync(int id);
+
 
 }

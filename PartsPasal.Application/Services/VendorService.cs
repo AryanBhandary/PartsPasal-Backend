@@ -1,4 +1,5 @@
-﻿using PartsPasal.Application.DTOs.Vendor;
+using PartsPasal.Application.DTOs.Vendor;
+using PartsPasal.Application.DTOs.Inventory;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 
@@ -113,27 +114,25 @@ public class VendorService : IVendorService
         return true;
     }
 
-    public async Task<List<VendorDto>> GetVendorsWithPartsAsync(int vendorId)
+    public async Task<List<PartDto>> GetVendorsWithPartsAsync(int vendorId)
     {
-        // Step 1: get all purchases for this vendor
-        var purchases = await _purchaseRepository.FindAsync(p => p.VendorId == vendorId);
+        // Get all parts directly associated with this vendor
+        var parts = await _partRepository.FindAsync(p => p.VendorId == vendorId);
 
-        var purchaseIds = purchases.Select(p => p.Id).ToList();
+        var vendors = await _vendorRepository.GetAllAsync();
+        var vendorDict = vendors.ToDictionary(v => v.Id, v => v.Name);
 
-        // Step 2: get purchase items
-        var items = await _purchaseItemRepository.FindAsync(i => purchaseIds.Contains(i.PurchaseInvoiceId));
-
-        var partIds = items.Select(i => i.VehiclePartId).Distinct().ToList();
-
-        // Step 3: get parts
-        var parts = await _partRepository.FindAsync(p => partIds.Contains(p.Id));
-
-        // Convert to VendorDto list (simplified response)
-        return parts.Select(p => new VendorDto
+        return parts.Select(p => new PartDto
         {
             Id = p.Id,
             Name = p.Name,
-            Category = p.Category
+            Description = p.Description,
+            Category = p.Category,
+            Price = p.Price,
+            StockQuantity = p.StockQuantity,
+            MinStockThreshold = p.MinStockThreshold,
+            VendorId = p.VendorId,
+            VendorName = p.VendorId.HasValue && vendorDict.TryGetValue(p.VendorId.Value, out var vName) ? vName : null
         }).ToList();
     }
 }

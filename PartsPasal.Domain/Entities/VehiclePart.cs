@@ -27,7 +27,10 @@ public class VehiclePart
 
     public int MinStockThreshold { get; set; } = 10;
 
+    public int? VendorId { get; set; }
+
     // Navigation properties
+    public Vendor? Vendor { get; set; }
     public ICollection<SalesInvoiceItem> SalesInvoiceItems { get; set; } = new List<SalesInvoiceItem>();
     public ICollection<PurchaseInvoiceItem> PurchaseInvoiceItems { get; set; } = new List<PurchaseInvoiceItem>();
 }

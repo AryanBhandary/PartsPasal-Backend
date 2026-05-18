@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace PartsPasal.Application.DTOs.Inventory;
 
@@ -25,4 +25,6 @@ public class CreatePartDto
 
     [Range(0, int.MaxValue)]
     public int MinStockThreshold { get; set; } = 10;
+
+    public int? VendorId { get; set; }
 }
