@@ -25,7 +25,6 @@ public class StaffManagementService(UserManager<User> userManager) : IStaffManag
             UserName = dto.Email,
             PhoneNumber = dto.PhoneNumber,
             Address = dto.Address,
-            SpecializedSkill = dto.SpecializedSkill,
             RegistrationDate = DateTime.UtcNow
         };
 
@@ -55,7 +54,7 @@ public class StaffManagementService(UserManager<User> userManager) : IStaffManag
             Name = s.Name,
             Email = s.Email ?? string.Empty,
             PhoneNumber = s.PhoneNumber ?? string.Empty,
-            SpecializedSkill = s.SpecializedSkill ?? string.Empty,
+            Address = s.Address,
             RegistrationDate = s.RegistrationDate
         });
     }
@@ -74,7 +73,7 @@ public class StaffManagementService(UserManager<User> userManager) : IStaffManag
             Name = user.Name,
             Email = user.Email ?? string.Empty,
             PhoneNumber = user.PhoneNumber ?? string.Empty,
-            SpecializedSkill = user.SpecializedSkill ?? string.Empty,
+            Address = user.Address,
             RegistrationDate = user.RegistrationDate
         };
     }
@@ -90,7 +89,6 @@ public class StaffManagementService(UserManager<User> userManager) : IStaffManag
         user.Name = dto.Name;
         user.PhoneNumber = dto.PhoneNumber;
         user.Address = dto.Address;
-        user.SpecializedSkill = dto.SpecializedSkill;
 
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)

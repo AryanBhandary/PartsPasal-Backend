@@ -19,7 +19,4 @@ public class CreateStaffDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     public string? Address { get; set; }
-
-    [Required]
-    public string SpecializedSkill { get; set; } = string.Empty;
 }
