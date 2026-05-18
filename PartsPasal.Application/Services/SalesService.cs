@@ -1,4 +1,4 @@
-﻿using PartsPasal.Application.DTOs.Sales;
+using PartsPasal.Application.DTOs.Sales;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 
@@ -178,5 +178,26 @@ public class SalesService : ISalesService
         }
 
         return invoiceDto;
+    }
+
+    public async Task<bool> MarkAsPaidAsync(int id)
+    {
+        var invoice = await _invoiceRepo.GetByIdAsync(id);
+        if (invoice == null || invoice.IsPaid)
+            return false;
+
+        invoice.IsPaid = true;
+        _invoiceRepo.Update(invoice);
+        await _invoiceRepo.SaveChangesAsync();
+
+        var customer = await _userRepo.GetByIdAsync(invoice.CustomerId);
+        if (customer != null)
+        {
+            customer.TotalServiceSpent += invoice.FinalAmount;
+            _userRepo.Update(customer);
+            await _userRepo.SaveChangesAsync();
+        }
+
+        return true;
     }
 }

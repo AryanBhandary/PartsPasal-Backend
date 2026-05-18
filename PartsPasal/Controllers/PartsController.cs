@@ -25,7 +25,7 @@ public class PartsController : ControllerBase
     {
         var parts = await _partService.GetAllPartsAsync();
         var available = parts
-            .Where(p => p.StockQuantity > 0)
+            .Where(p => p.StockQuantity > 0 && p.Category != "Service")
             .Select(p => new
             {
                 p.Id,

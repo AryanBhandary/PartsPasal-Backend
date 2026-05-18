@@ -7,4 +7,5 @@ public interface ISalesService
     Task<SalesInvoiceDto> SellPartsAsync(CreateSaleDto dto);
     Task<List<SalesInvoiceDto>> GetAllSalesAsync();
     Task<SalesInvoiceDto?> GetSaleByIdAsync(int id);
+    Task<bool> MarkAsPaidAsync(int id);
 }

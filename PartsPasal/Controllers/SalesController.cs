@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using PartsPasal.Application.DTOs.Sales;
 using PartsPasal.Application.Interfaces;
@@ -39,5 +39,15 @@ public class SalesController : ControllerBase
             return NotFound();
 
         return Ok(result);
+    }
+
+    [HttpPut("{id}/pay")]
+    public async Task<IActionResult> MarkAsPaid(int id)
+    {
+        var success = await _salesService.MarkAsPaidAsync(id);
+        if (!success)
+            return BadRequest(new { message = "Invoice not found or already paid." });
+
+        return Ok(new { message = "Invoice marked as paid successfully." });
     }
 }

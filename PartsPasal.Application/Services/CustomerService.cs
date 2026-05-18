@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using PartsPasal.Application.DTOs.Customer;
+using PartsPasal.Application.DTOs.Staff;
+using PartsPasal.Application.DTOs.Sales;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 using PartsPasal.Domain.Enums;
@@ -14,6 +16,8 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<User> _userRepository;
     private readonly IRepositoryBase<SalesInvoice> _salesInvoiceRepository;
     private readonly UserManager<User> _userManager;
+    private readonly IRepositoryBase<SalesInvoiceItem> _salesInvoiceItemRepository;
+    private readonly IRepositoryBase<VehiclePart> _vehiclePartRepository;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
@@ -21,7 +25,9 @@ public class CustomerService : ICustomerService
         IRepositoryBase<PartRequest> partRequestRepository,
         IRepositoryBase<User> userRepository,
         IRepositoryBase<SalesInvoice> salesInvoiceRepository,
-        UserManager<User> userManager)
+        UserManager<User> userManager,
+        IRepositoryBase<SalesInvoiceItem> salesInvoiceItemRepository,
+        IRepositoryBase<VehiclePart> vehiclePartRepository)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
@@ -29,6 +35,8 @@ public class CustomerService : ICustomerService
         _userRepository = userRepository;
         _salesInvoiceRepository = salesInvoiceRepository;
         _userManager = userManager;
+        _salesInvoiceItemRepository = salesInvoiceItemRepository;
+        _vehiclePartRepository = vehiclePartRepository;
     }
 
     // ================= EXISTING FEATURES =================
@@ -291,20 +299,38 @@ public class CustomerService : ICustomerService
         var partRequests = await GetMyPartRequestsAsync(userId);
 
         var purchases = await _salesInvoiceRepository.FindAsync(s => s.CustomerId == userId);
+        
+        var purchaseIds = purchases.Select(p => p.Id).ToList();
+        var allInvoiceItems = await _salesInvoiceItemRepository.FindAsync(item => purchaseIds.Contains(item.SalesInvoiceId));
+        
+        var partIds = allInvoiceItems.Select(item => item.VehiclePartId).Distinct().ToList();
+        var allParts = await _vehiclePartRepository.FindAsync(part => partIds.Contains(part.Id));
 
         return new CustomerHistoryDto
         {
             Vehicles = vehicles,
             Appointments = appointments,
             PartRequests = partRequests,
-            Purchases = purchases.Select(p => new SalesHistoryDto
-            {
-                Id = p.Id,
-                SaleDate = p.SaleDate,
-                TotalAmount = p.TotalAmount,
-                DiscountAmount = p.DiscountAmount,
-                FinalAmount = p.FinalAmount,
-                IsPaid = p.IsPaid
+            Purchases = purchases.Select(p => {
+                var invoiceItems = allInvoiceItems.Where(item => item.SalesInvoiceId == p.Id).ToList();
+                return new SalesHistoryDto
+                {
+                    Id = p.Id,
+                    SaleDate = p.SaleDate,
+                    TotalAmount = p.TotalAmount,
+                    DiscountAmount = p.DiscountAmount,
+                    FinalAmount = p.FinalAmount,
+                    IsPaid = p.IsPaid,
+                    Items = invoiceItems.Select(item => {
+                        var part = allParts.FirstOrDefault(part => part.Id == item.VehiclePartId);
+                        return new SalesHistoryItemDto
+                        {
+                            PartName = part?.Name ?? "Unknown Part",
+                            Quantity = item.Quantity,
+                            SalePrice = item.SalePrice
+                        };
+                    }).ToList()
+                };
             }).ToList()
         };
     }
@@ -440,5 +466,158 @@ public class CustomerService : ICustomerService
         }
 
         return result;
+    }
+
+    private const decimal FixedServiceCharge = 4000.00m;
+
+    public async Task<List<StaffAppointmentDto>> GetAllAppointmentsForStaffAsync()
+    {
+        var appointments = await _appointmentRepository.GetAllAsync();
+        var result = new List<StaffAppointmentDto>();
+
+        foreach (var a in appointments)
+        {
+            var user = await _userRepository.GetByIdAsync(a.UserId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(a.VehicleId);
+
+            result.Add(new StaffAppointmentDto
+            {
+                Id = a.Id,
+                CustomerId = a.UserId,
+                CustomerName = user?.Name ?? "Unknown",
+                CustomerEmail = user?.Email ?? "Unknown",
+                VehicleId = a.VehicleId,
+                VehicleModel = vehicle?.Model ?? "Unknown",
+                LicensePlate = vehicle?.LicensePlate ?? "Unknown",
+                AppointmentDate = a.AppointmentDate,
+                Description = a.Description,
+                Status = a.Status.ToString()
+            });
+        }
+
+        return result.OrderByDescending(a => a.AppointmentDate).ToList();
+    }
+
+    public async Task<bool> BeginAppointmentAsync(int appointmentId)
+    {
+        var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
+        if (appointment == null || appointment.Status != AppointmentStatus.Scheduled)
+            return false;
+
+        appointment.Status = AppointmentStatus.InProgress;
+        _appointmentRepository.Update(appointment);
+        await _appointmentRepository.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<SalesInvoiceDto?> EndAppointmentAsync(int appointmentId, int staffId, EndAppointmentDto dto)
+    {
+        var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
+        if (appointment == null || appointment.Status != AppointmentStatus.InProgress)
+            return null;
+
+        var customer = await _userRepository.GetByIdAsync(appointment.UserId);
+        if (customer == null)
+            throw new System.Exception("Customer not found");
+
+        var invoice = new SalesInvoice
+        {
+            CustomerId = appointment.UserId,
+            StaffId = staffId,
+            SaleDate = DateTime.UtcNow,
+            IsPaid = dto.IsPaid
+        };
+
+        await _salesInvoiceRepository.AddAsync(invoice);
+        await _salesInvoiceRepository.SaveChangesAsync();
+
+        decimal totalAmount = 0;
+
+        foreach (var item in dto.Items)
+        {
+            var part = await _vehiclePartRepository.GetByIdAsync(item.PartId);
+            if (part == null)
+                throw new System.Exception("Part not found");
+
+            if (part.Category != "Service")
+            {
+                if (part.StockQuantity < item.Quantity)
+                    throw new System.Exception($"Not enough stock for {part.Name}");
+
+                part.StockQuantity -= item.Quantity;
+                _vehiclePartRepository.Update(part);
+            }
+
+            var lineTotal = part.Price * item.Quantity;
+            totalAmount += lineTotal;
+
+            var invoiceItem = new SalesInvoiceItem
+            {
+                SalesInvoiceId = invoice.Id,
+                VehiclePartId = part.Id,
+                Quantity = item.Quantity,
+                SalePrice = part.Price
+            };
+            await _salesInvoiceItemRepository.AddAsync(invoiceItem);
+        }
+
+        // Add service charge statically
+        totalAmount += FixedServiceCharge;
+
+        await _vehiclePartRepository.SaveChangesAsync();
+        await _salesInvoiceItemRepository.SaveChangesAsync();
+
+        invoice.TotalAmount = totalAmount;
+
+        // Apply loyalty discount (10% if total spent exceeds 5000)
+        var isLoyalCustomer = customer.TotalServiceSpent > 5000m ||
+                              (invoice.IsPaid && (customer.TotalServiceSpent + invoice.TotalAmount) > 5000m);
+
+        invoice.DiscountAmount = isLoyalCustomer ? invoice.TotalAmount * 0.10m : 0m;
+        invoice.FinalAmount = invoice.TotalAmount - invoice.DiscountAmount;
+
+        _salesInvoiceRepository.Update(invoice);
+        await _salesInvoiceRepository.SaveChangesAsync();
+
+        // Update customer's lifetime spent amount only if paid (non-credit)
+        if (invoice.IsPaid)
+        {
+            customer.TotalServiceSpent += invoice.FinalAmount;
+            _userRepository.Update(customer);
+            await _userRepository.SaveChangesAsync();
+        }
+
+        // Complete the appointment
+        appointment.Status = AppointmentStatus.Completed;
+        _appointmentRepository.Update(appointment);
+        await _appointmentRepository.SaveChangesAsync();
+
+        // Map and return the generated invoice
+        var items = await _salesInvoiceItemRepository.FindAsync(i => i.SalesInvoiceId == invoice.Id);
+        var invoiceDto = new SalesInvoiceDto
+        {
+            Id = invoice.Id,
+            CustomerId = invoice.CustomerId,
+            StaffId = invoice.StaffId,
+            SaleDate = invoice.SaleDate,
+            TotalAmount = invoice.TotalAmount,
+            DiscountAmount = invoice.DiscountAmount,
+            FinalAmount = invoice.FinalAmount,
+            IsPaid = invoice.IsPaid
+        };
+
+        foreach (var item in items)
+        {
+            var part = await _vehiclePartRepository.GetByIdAsync(item.VehiclePartId);
+            invoiceDto.Items.Add(new SalesInvoiceItemDto
+            {
+                PartId = item.VehiclePartId,
+                PartName = part?.Name ?? string.Empty,
+                Quantity = item.Quantity,
+                SalePrice = item.SalePrice
+            });
+        }
+
+        return invoiceDto;
     }
 }

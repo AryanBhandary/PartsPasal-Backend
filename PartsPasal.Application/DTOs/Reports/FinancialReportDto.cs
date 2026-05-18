@@ -7,6 +7,7 @@ public class FinancialReportDto
     public DateTime PeriodEnd { get; set; }
     public decimal TotalSales { get; set; }
     public decimal TotalPurchases { get; set; }
+    public decimal TotalCredit { get; set; }
     public decimal NetProfit { get; set; }
     public int SalesInvoiceCount { get; set; }
     public int PurchaseInvoiceCount { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace PartsPasal.Application.DTOs.Customer;
+namespace PartsPasal.Application.DTOs.Customer;
 
 public class CustomerHistoryDto
 {
@@ -16,4 +16,12 @@ public class SalesHistoryDto
     public decimal DiscountAmount { get; set; }
     public decimal FinalAmount { get; set; }
     public bool IsPaid { get; set; }
+    public List<SalesHistoryItemDto> Items { get; set; } = new();
+}
+
+public class SalesHistoryItemDto
+{
+    public string PartName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public decimal SalePrice { get; set; }
 }

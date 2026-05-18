@@ -1,4 +1,6 @@
 using PartsPasal.Application.DTOs.Customer;
+using PartsPasal.Application.DTOs.Staff;
+using PartsPasal.Application.DTOs.Sales;
 
 namespace PartsPasal.Application.Interfaces;
 
@@ -63,4 +65,12 @@ public interface ICustomerService
     // Staff: Search customers (name, phone, id, vehicle number)
     Task<List<CustomerProfileDto>> SearchCustomersAsync(string query);
 
+    // Staff: View all appointments
+    Task<List<StaffAppointmentDto>> GetAllAppointmentsForStaffAsync();
+
+    // Staff: Begin an appointment
+    Task<bool> BeginAppointmentAsync(int appointmentId);
+
+    // Staff: End appointment and generate sales invoice
+    Task<SalesInvoiceDto?> EndAppointmentAsync(int appointmentId, int staffId, EndAppointmentDto dto);
 }

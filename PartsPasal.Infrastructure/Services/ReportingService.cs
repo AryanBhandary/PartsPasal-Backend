@@ -19,10 +19,13 @@ public class ReportingService(AppDbContext context, UserManager<User> userManage
         var normalized = NormalizePeriodType(periodType);
         var (periodStart, periodEnd) = GetFinancialPeriodBounds(normalized);
 
-        var sales = await _context.SalesInvoices
+        var allSales = await _context.SalesInvoices
             .AsNoTracking()
             .Where(s => s.SaleDate >= periodStart && s.SaleDate < periodEnd)
             .ToListAsync();
+
+        var sales = allSales.Where(s => s.IsPaid).ToList();
+        var creditSales = allSales.Where(s => !s.IsPaid).ToList();
 
         var purchases = await _context.PurchaseInvoices
             .AsNoTracking()
@@ -40,6 +43,7 @@ public class ReportingService(AppDbContext context, UserManager<User> userManage
 
         var totalSales = sales.Sum(s => s.FinalAmount);
         var totalPurchases = purchases.Sum(p => p.TotalAmount);
+        var totalCredit = creditSales.Sum(s => s.FinalAmount);
 
         return new FinancialReportDto
         {
@@ -48,6 +52,7 @@ public class ReportingService(AppDbContext context, UserManager<User> userManage
             PeriodEnd = periodEnd,
             TotalSales = totalSales,
             TotalPurchases = totalPurchases,
+            TotalCredit = totalCredit,
             NetProfit = totalSales - totalPurchases,
             SalesInvoiceCount = sales.Count,
             PurchaseInvoiceCount = purchases.Count,
