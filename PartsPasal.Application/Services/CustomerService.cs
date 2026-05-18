@@ -215,13 +215,49 @@ public class CustomerService : ICustomerService
 
     public async Task<int> AddVehicleAsync(int userId, CreateVehicleDto dto)
     {
+        var licensePlate = dto.LicensePlate.Trim();
+        var vin = dto.VIN?.Trim();
+
+        // Check if LicensePlate already exists
+        var existingPlate = await _vehicleRepository.FindAsync(v => 
+            v.LicensePlate.ToLower() == licensePlate.ToLower());
+        if (existingPlate.Any())
+        {
+            throw new InvalidOperationException("A vehicle with this license plate already exists.");
+        }
+
+        // Check if VIN already exists (if provided)
+        if (!string.IsNullOrWhiteSpace(vin))
+        {
+            var existingVin = await _vehicleRepository.FindAsync(v => 
+                v.VIN != null && v.VIN.ToLower() == vin.ToLower());
+            if (existingVin.Any())
+            {
+                throw new InvalidOperationException("A vehicle with this VIN already exists.");
+            }
+        }
+
+        // Validate last service date (if provided)
+        if (dto.LastServiceDate.HasValue)
+        {
+            var serviceDate = dto.LastServiceDate.Value;
+            if (serviceDate > DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("Last service date cannot be in the future.");
+            }
+            if (serviceDate.Year < dto.Year)
+            {
+                throw new InvalidOperationException($"Last service date cannot be before the vehicle's model year ({dto.Year}).");
+            }
+        }
+
         var vehicle = new Vehicle
         {
             UserId = userId,
-            LicensePlate = dto.LicensePlate,
-            Model = dto.Model,
+            LicensePlate = licensePlate,
+            Model = dto.Model.Trim(),
             Year = dto.Year,
-            VIN = dto.VIN,
+            VIN = string.IsNullOrWhiteSpace(vin) ? null : vin,
             LastServiceDate = dto.LastServiceDate.HasValue
                 ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
                 : null,
@@ -260,10 +296,46 @@ public class CustomerService : ICustomerService
         if (vehicle == null)
             return false;
 
-        vehicle.LicensePlate = dto.LicensePlate;
-        vehicle.Model = dto.Model;
+        var licensePlate = dto.LicensePlate.Trim();
+        var vin = dto.VIN?.Trim();
+
+        // Check if LicensePlate already exists on another vehicle
+        var existingPlate = await _vehicleRepository.FindAsync(v => 
+            v.Id != vehicleId && v.LicensePlate.ToLower() == licensePlate.ToLower());
+        if (existingPlate.Any())
+        {
+            throw new InvalidOperationException("A vehicle with this license plate already exists.");
+        }
+
+        // Check if VIN already exists on another vehicle (if provided)
+        if (!string.IsNullOrWhiteSpace(vin))
+        {
+            var existingVin = await _vehicleRepository.FindAsync(v => 
+                v.Id != vehicleId && v.VIN != null && v.VIN.ToLower() == vin.ToLower());
+            if (existingVin.Any())
+            {
+                throw new InvalidOperationException("A vehicle with this VIN already exists.");
+            }
+        }
+
+        // Validate last service date (if provided)
+        if (dto.LastServiceDate.HasValue)
+        {
+            var serviceDate = dto.LastServiceDate.Value;
+            if (serviceDate > DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("Last service date cannot be in the future.");
+            }
+            if (serviceDate.Year < dto.Year)
+            {
+                throw new InvalidOperationException($"Last service date cannot be before the vehicle's model year ({dto.Year}).");
+            }
+        }
+
+        vehicle.LicensePlate = licensePlate;
+        vehicle.Model = dto.Model.Trim();
         vehicle.Year = dto.Year;
-        vehicle.VIN = dto.VIN;
+        vehicle.VIN = string.IsNullOrWhiteSpace(vin) ? null : vin;
         vehicle.LastServiceDate = dto.LastServiceDate.HasValue
             ? DateTime.SpecifyKind(dto.LastServiceDate.Value, DateTimeKind.Utc)
             : null;

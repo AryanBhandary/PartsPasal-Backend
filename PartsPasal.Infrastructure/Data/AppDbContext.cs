@@ -79,5 +79,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             new IdentityRole<int> { Id = 2, Name = nameof(UserRole.Staff), NormalizedName = "STAFF", ConcurrencyStamp = "staff-role-stamp" },
             new IdentityRole<int> { Id = 3, Name = nameof(UserRole.Admin), NormalizedName = "ADMIN", ConcurrencyStamp = "admin-role-stamp" }
         );
+
+        // Configure unique constraints for Vehicle (LicensePlate and VIN)
+        modelBuilder.Entity<Vehicle>()
+            .HasIndex(v => v.LicensePlate)
+            .IsUnique();
+
+        modelBuilder.Entity<Vehicle>()
+            .HasIndex(v => v.VIN)
+            .IsUnique();
     }
 }
