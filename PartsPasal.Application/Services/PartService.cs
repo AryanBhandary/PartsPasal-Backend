@@ -1,4 +1,4 @@
-﻿using PartsPasal.Application.DTOs.Inventory;
+using PartsPasal.Application.DTOs.Inventory;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 
@@ -7,10 +7,14 @@ namespace PartsPasal.Application.Services;
 public class PartService : IPartService
 {
     private readonly IRepositoryBase<VehiclePart> _partRepository;
+    private readonly IRepositoryBase<Vendor> _vendorRepository;
 
-    public PartService(IRepositoryBase<VehiclePart> partRepository)
+    public PartService(
+        IRepositoryBase<VehiclePart> partRepository,
+        IRepositoryBase<Vendor> vendorRepository)
     {
         _partRepository = partRepository;
+        _vendorRepository = vendorRepository;
     }
 
     public async Task<int> CreatePartAsync(CreatePartDto dto)
@@ -22,7 +26,8 @@ public class PartService : IPartService
             Category = dto.Category,
             Price = dto.Price,
             StockQuantity = dto.StockQuantity,
-            MinStockThreshold = dto.MinStockThreshold
+            MinStockThreshold = dto.MinStockThreshold,
+            VendorId = dto.VendorId
         };
 
         await _partRepository.AddAsync(part);
@@ -34,6 +39,8 @@ public class PartService : IPartService
     public async Task<List<PartDto>> GetAllPartsAsync()
     {
         var parts = await _partRepository.GetAllAsync();
+        var vendors = await _vendorRepository.GetAllAsync();
+        var vendorDict = vendors.ToDictionary(v => v.Id, v => v.Name);
 
         return parts.Select(p => new PartDto
         {
@@ -43,7 +50,9 @@ public class PartService : IPartService
             Category = p.Category,
             Price = p.Price,
             StockQuantity = p.StockQuantity,
-            MinStockThreshold = p.MinStockThreshold
+            MinStockThreshold = p.MinStockThreshold,
+            VendorId = p.VendorId,
+            VendorName = p.VendorId.HasValue && vendorDict.TryGetValue(p.VendorId.Value, out var vName) ? vName : null
         }).ToList();
     }
 
@@ -53,6 +62,13 @@ public class PartService : IPartService
 
         if (part == null) return null;
 
+        string? vendorName = null;
+        if (part.VendorId.HasValue)
+        {
+            var vendor = await _vendorRepository.GetByIdAsync(part.VendorId.Value);
+            vendorName = vendor?.Name;
+        }
+
         return new PartDto
         {
             Id = part.Id,
@@ -61,7 +77,9 @@ public class PartService : IPartService
             Category = part.Category,
             Price = part.Price,
             StockQuantity = part.StockQuantity,
-            MinStockThreshold = part.MinStockThreshold
+            MinStockThreshold = part.MinStockThreshold,
+            VendorId = part.VendorId,
+            VendorName = vendorName
         };
     }
 
@@ -77,6 +95,7 @@ public class PartService : IPartService
         part.Price = dto.Price;
         part.StockQuantity = dto.StockQuantity;
         part.MinStockThreshold = dto.MinStockThreshold;
+        part.VendorId = dto.VendorId;
 
         _partRepository.Update(part);
         await _partRepository.SaveChangesAsync();

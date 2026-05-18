@@ -1,4 +1,4 @@
-﻿namespace PartsPasal.Application.DTOs.Inventory;
+namespace PartsPasal.Application.DTOs.Inventory;
 
 public class PartDto
 {
@@ -15,4 +15,7 @@ public class PartDto
     public int StockQuantity { get; set; }
 
     public int MinStockThreshold { get; set; }
+
+    public int? VendorId { get; set; }
+    public string? VendorName { get; set; }
 }

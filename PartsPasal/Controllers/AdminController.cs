@@ -15,10 +15,12 @@ namespace PartsPasal.Controllers;
 [Route("api/[controller]")]
 public class AdminController(
     IStaffManagementService staffManagementService,
-    IReportingService reportingService) : ControllerBase
+    IReportingService reportingService,
+    ICustomerService customerService) : ControllerBase
 {
     private readonly IStaffManagementService _staffManagementService = staffManagementService;
     private readonly IReportingService _reportingService = reportingService;
+    private readonly ICustomerService _customerService = customerService;
 
     [HttpPost("staffs")]
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffDto dto)
@@ -129,7 +131,20 @@ public class AdminController(
         format.Equals("csv", StringComparison.OrdinalIgnoreCase) ||
         format.Equals("download", StringComparison.OrdinalIgnoreCase);
 
-    // [HttpGet("inventory/status")] - View overall inventory and low stock alerts
-    // [HttpPost("purchase-invoice")] - Create purchase invoices for stock updates
-    // [HttpDelete("vendors/{id}")] - Manage vendor details (CRUD)
+    [HttpGet("part-requests")]
+    public async Task<IActionResult> GetAllPartRequests()
+    {
+        var requests = await _customerService.GetAllPartRequestsAsync();
+        return Ok(requests);
+    }
+
+    [HttpPut("part-requests/{id}/status")]
+    public async Task<IActionResult> UpdatePartRequestStatus(int id, [FromBody] PartsPasal.Domain.Enums.PartRequestStatus status)
+    {
+        var success = await _customerService.UpdatePartRequestStatusAsync(id, status);
+        if (!success)
+            return NotFound(new { Message = "Part request not found." });
+
+        return Ok(new { Message = "Part request status updated successfully." });
+    }
 }

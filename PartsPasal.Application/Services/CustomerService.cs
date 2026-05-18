@@ -137,6 +137,36 @@ public class CustomerService : ICustomerService
             .ToList();
     }
 
+    public async Task<List<PartRequestDto>> GetAllPartRequestsAsync()
+    {
+        var requests = await _partRequestRepository.GetAllAsync();
+
+        return requests
+            .OrderByDescending(r => r.RequestDate)
+            .ThenByDescending(r => r.Id)
+            .Select(r => new PartRequestDto
+            {
+                Id = r.Id,
+                PartName = r.PartName,
+                Description = r.Description,
+                RequestDate = r.RequestDate,
+                Status = r.Status.ToString()
+            })
+            .ToList();
+    }
+
+    public async Task<bool> UpdatePartRequestStatusAsync(int requestId, PartRequestStatus status)
+    {
+        var request = await _partRequestRepository.GetByIdAsync(requestId);
+        if (request == null) return false;
+
+        request.Status = status;
+        _partRequestRepository.Update(request);
+        await _partRequestRepository.SaveChangesAsync();
+
+        return true;
+    }
+
     public async Task<CustomerProfileDto?> GetProfileAsync(int userId)
     {
         var user = await _userRepository.GetByIdAsync(userId);

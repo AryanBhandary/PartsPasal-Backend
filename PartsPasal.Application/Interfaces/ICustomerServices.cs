@@ -1,4 +1,4 @@
-﻿using PartsPasal.Application.DTOs.Customer;
+using PartsPasal.Application.DTOs.Customer;
 
 namespace PartsPasal.Application.Interfaces;
 
@@ -20,6 +20,12 @@ public interface ICustomerService
 
     // Get a list of part requests for the user
     Task<List<PartRequestDto>> GetMyPartRequestsAsync(int userId);
+
+    // Admin: Get all part requests
+    Task<List<PartRequestDto>> GetAllPartRequestsAsync();
+
+    // Admin: Update part request status
+    Task<bool> UpdatePartRequestStatusAsync(int requestId, PartsPasal.Domain.Enums.PartRequestStatus status);
 
     // Get the profile information of the user
     Task<CustomerProfileDto?> GetProfileAsync(int userId);
