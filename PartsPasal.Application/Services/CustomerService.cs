@@ -18,6 +18,7 @@ public class CustomerService : ICustomerService
     private readonly UserManager<User> _userManager;
     private readonly IRepositoryBase<SalesInvoiceItem> _salesInvoiceItemRepository;
     private readonly IRepositoryBase<VehiclePart> _vehiclePartRepository;
+    private readonly IStoreReviewService _storeReviewService;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
@@ -27,7 +28,8 @@ public class CustomerService : ICustomerService
         IRepositoryBase<SalesInvoice> salesInvoiceRepository,
         UserManager<User> userManager,
         IRepositoryBase<SalesInvoiceItem> salesInvoiceItemRepository,
-        IRepositoryBase<VehiclePart> vehiclePartRepository)
+        IRepositoryBase<VehiclePart> vehiclePartRepository,
+        IStoreReviewService storeReviewService)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
@@ -37,6 +39,7 @@ public class CustomerService : ICustomerService
         _userManager = userManager;
         _salesInvoiceItemRepository = salesInvoiceItemRepository;
         _vehiclePartRepository = vehiclePartRepository;
+        _storeReviewService = storeReviewService;
     }
 
     // ================= EXISTING FEATURES =================
@@ -186,6 +189,9 @@ public class CustomerService : ICustomerService
         if (user == null)
             return null;
 
+        var averageRating = await _storeReviewService.GetAverageRatingAsync();
+        var recentReviews = await _storeReviewService.GetRecentReviewsAsync(2);
+
         return new CustomerProfileDto
         {
             Id = user.Id,
@@ -194,7 +200,9 @@ public class CustomerService : ICustomerService
             PhoneNumber = user.PhoneNumber,
             Address = user.Address,
             RegistrationDate = user.RegistrationDate,
-            TotalServiceSpent = user.TotalServiceSpent
+            TotalServiceSpent = user.TotalServiceSpent,
+            AverageStoreRating = averageRating,
+            RecentStoreReviews = recentReviews
         };
     }
 

@@ -72,6 +72,9 @@ public static class DependencyInjection
         services.AddScoped<IPartService, PartService>();
         //register vendor service 
         services.AddScoped<IVendorService, VendorService>();
+        
+        //register store review service
+        services.AddScoped<IStoreReviewService, StoreReviewService>();
 
         // Registering sales and invoice services
         services.AddScoped<ISalesService, SalesService>();

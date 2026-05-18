@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<PartRequest> PartRequests => Set<PartRequest>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<StoreReview> StoreReviews => Set<StoreReview>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +55,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
         modelBuilder.Entity<Review>()
             .HasOne(r => r.User).WithMany(u => u.Reviews)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StoreReview>()
+            .HasOne(sr => sr.User).WithMany(u => u.StoreReviews)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PartRequest>()

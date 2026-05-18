@@ -33,6 +33,7 @@ public class User : IdentityUser<int>
     public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public ICollection<PartRequest> PartRequests { get; set; } = new List<PartRequest>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<StoreReview> StoreReviews { get; set; } = new List<StoreReview>();
 
     // Navigation properties (Staff Role)
     [InverseProperty(nameof(SalesInvoice.Staff))]
