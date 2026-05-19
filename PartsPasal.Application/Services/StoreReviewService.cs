@@ -45,17 +45,17 @@ public class StoreReviewService : IStoreReviewService
         return review.Id;
     }
 
-    public async Task<string> GetAverageRatingAsync()
+    public async Task<double?> GetAverageRatingAsync()
     {
         var reviews = await _storeReviewRepository.GetAllAsync();
         
         if (!reviews.Any())
         {
-            return "No ratings yet";
+            return null;
         }
 
         double average = reviews.Average(r => r.Rating);
-        return $"{average:F1} ⭐";
+        return Math.Round(average, 1);
     }
 
     public async Task<List<StoreReviewDto>> GetRecentReviewsAsync(int count)
@@ -72,13 +72,11 @@ public class StoreReviewService : IStoreReviewService
         foreach (var review in recentReviews)
         {
             var user = await _userRepository.GetByIdAsync(review.UserId);
-            string stars = new string('⭐', review.Rating);
-
             result.Add(new StoreReviewDto
             {
                 Id = review.Id,
                 ReviewerName = user?.Name ?? "Anonymous",
-                RatingStars = stars,
+                Rating = review.Rating,
                 ReviewDate = review.ReviewDate
             });
         }

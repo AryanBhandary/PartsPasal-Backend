@@ -15,6 +15,6 @@ public class CustomerProfileDto
     public List<VehicleDto> Vehicles { get; set; } = new();
 
     // New Store Review fields
-    public string? AverageStoreRating { get; set; } // e.g., "4.5 ⭐"
+    public double? AverageStoreRating { get; set; }
     public List<StoreReviewDto> RecentStoreReviews { get; set; } = new();
 }
