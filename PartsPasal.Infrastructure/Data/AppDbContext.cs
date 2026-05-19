@@ -85,6 +85,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             new IdentityRole<int> { Id = 3, Name = nameof(UserRole.Admin), NormalizedName = "ADMIN", ConcurrencyStamp = "admin-role-stamp" }
         );
 
+        // Seeding default admin user
+        var hasher = new PasswordHasher<User>();
+        var adminUser = new User
+        {
+            Id = 1,
+            UserName = "admin",
+            NormalizedUserName = "ADMIN",
+            Email = "admin@gmail.com",
+            NormalizedEmail = "ADMIN@GMAIL.COM",
+            EmailConfirmed = true,
+            SecurityStamp = "admin-security-stamp",
+            ConcurrencyStamp = "admin-concurrency-stamp",
+            PasswordHash = "AQAAAAEAACcQAAAAEDMI+/0DRp5QbOuTKlmE6Somy+MxXdC0KtUJ+1FQl+DjbDq50oj3MD7WOT64GKpsbA==",
+            RegistrationDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            TotalServiceSpent = 0,
+            LockoutEnabled = false,
+            AccessFailedCount = 0,
+            PhoneNumberConfirmed = false,
+            TwoFactorEnabled = false,
+        };
+
+        modelBuilder.Entity<User>().HasData(adminUser);
+
+        // Assign admin role to admin user
+        modelBuilder.Entity<IdentityUserRole<int>>().HasData(
+            new IdentityUserRole<int> { UserId = 1, RoleId = 3 }
+        );
+
         // Configure unique constraints for Vehicle (LicensePlate and VIN)
         modelBuilder.Entity<Vehicle>()
             .HasIndex(v => v.LicensePlate)

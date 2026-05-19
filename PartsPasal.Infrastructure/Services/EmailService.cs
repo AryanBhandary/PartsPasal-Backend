@@ -45,7 +45,7 @@ public class EmailService : IEmailService
             .Include(i => i.Customer)
             .Include(i => i.Staff)
             .Include(i => i.Items)
-            .ThenInclude(ii => ii.VehiclePartId)
+            .ThenInclude(ii => ii.VehiclePart)
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
         if (invoice == null)

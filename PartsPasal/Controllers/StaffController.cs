@@ -17,10 +17,12 @@ namespace PartsPasal.Controllers;
 public class StaffController : ControllerBase
 {
     private readonly ICustomerService _customerService;
+    private readonly IInvoiceService _invoiceService;
 
-    public StaffController(ICustomerService customerService)
+    public StaffController(ICustomerService customerService, IInvoiceService invoiceService)
     {
         _customerService = customerService;
+        _invoiceService = invoiceService;
     }
 
     [HttpPost("register-customer")]
@@ -137,7 +139,22 @@ public class StaffController : ControllerBase
                 return BadRequest(new { message = "Appointment not found or not in progress." });
             }
 
-            return Ok(new { message = "Appointment completed and invoice generated.", invoice });
+            bool? emailSent = null;
+            string? emailError = null;
+            if (dto.SendInvoiceEmail)
+            {
+                emailSent = false;
+                try
+                {
+                    emailSent = await _invoiceService.SendInvoiceEmailAsync(invoice.Id);
+                }
+                catch (Exception ex)
+                {
+                    emailError = ex.Message;
+                }
+            }
+
+            return Ok(new { message = "Appointment completed and invoice generated.", invoice, emailSent, emailError });
         }
         catch (System.Exception ex)
         {
