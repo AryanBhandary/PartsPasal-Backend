@@ -1,6 +1,7 @@
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.DTOs.Staff;
 using PartsPasal.Application.DTOs.Sales;
+using PartsPasal.Application.DTOs.Reports;
 
 namespace PartsPasal.Application.Interfaces;
 
@@ -73,4 +74,7 @@ public interface ICustomerService
 
     // Staff: End appointment and generate sales invoice
     Task<SalesInvoiceDto?> EndAppointmentAsync(int appointmentId, int staffId, EndAppointmentDto dto);
+
+    // Staff: Get customer reports (top spenders, regulars, pending credits)
+    Task<StaffCustomerReportsDto> GetCustomerReportsForStaffAsync();
 }

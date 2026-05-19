@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.DTOs.Staff;
 using PartsPasal.Application.Interfaces;
+using PartsPasal.Application.DTOs.Reports;
 
 namespace PartsPasal.Controllers;
 
@@ -160,5 +161,12 @@ public class StaffController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("customer-reports")]
+    public async Task<IActionResult> GetCustomerReports()
+    {
+        var reports = await _customerService.GetCustomerReportsForStaffAsync();
+        return Ok(reports);
     }
 }
