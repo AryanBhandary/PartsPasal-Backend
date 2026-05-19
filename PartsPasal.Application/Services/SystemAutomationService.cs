@@ -142,4 +142,22 @@ public class SystemAutomationService : ISystemAutomationService
             InvoiceIds = sentInvoiceIds
         };
     }
+
+    public async Task NotifyIfLowStockAsync(VehiclePart part, int previousQuantity)
+    {
+        if (part == null) return;
+        if (part.StockQuantity < previousQuantity && part.StockQuantity <= 10)
+        {
+            var admins = await _userManager.GetUsersInRoleAsync("Admin");
+            foreach (var admin in admins)
+            {
+                await _notificationService.SendAsync(new CreateNotificationDto
+                {
+                    Title = "Low Stock Alert",
+                    Message = $"1 part(s) are below stock threshold (<10): {part.Name}({part.StockQuantity}).",
+                    RecipientUserId = admin.Id
+                });
+            }
+        }
+    }
 }

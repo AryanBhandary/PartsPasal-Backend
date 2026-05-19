@@ -10,17 +10,20 @@ public class SalesService : ISalesService
     private readonly IRepositoryBase<SalesInvoiceItem> _itemRepo;
     private readonly IRepositoryBase<VehiclePart> _partRepo;
     private readonly IRepositoryBase<User> _userRepo;
+    private readonly ISystemAutomationService _automationService;
 
     public SalesService(
         IRepositoryBase<SalesInvoice> invoiceRepo,
         IRepositoryBase<SalesInvoiceItem> itemRepo,
         IRepositoryBase<VehiclePart> partRepo,
-        IRepositoryBase<User> userRepo)
+        IRepositoryBase<User> userRepo,
+        ISystemAutomationService automationService)
     {
         _invoiceRepo = invoiceRepo;
         _itemRepo = itemRepo;
         _partRepo = partRepo;
         _userRepo = userRepo;
+        _automationService = automationService;
     }
 
     public async Task<SalesInvoiceDto> SellPartsAsync(CreateSaleDto dto)
@@ -43,6 +46,8 @@ public class SalesService : ISalesService
         await _invoiceRepo.AddAsync(invoice);
         await _invoiceRepo.SaveChangesAsync();
 
+        var partQtyTracks = new List<(VehiclePart Part, int PreviousQuantity)>();
+
         foreach (var item in dto.Items)
         {
             var part = await _partRepo.GetByIdAsync(item.PartId);
@@ -57,8 +62,11 @@ public class SalesService : ISalesService
 
             totalAmount += lineTotal;
 
+            var previousQty = part.StockQuantity;
             part.StockQuantity -= item.Quantity;
             _partRepo.Update(part);
+
+            partQtyTracks.Add((part, previousQty));
 
             var invoiceItem = new SalesInvoiceItem
             {
@@ -73,6 +81,11 @@ public class SalesService : ISalesService
 
         await _partRepo.SaveChangesAsync();
         await _itemRepo.SaveChangesAsync();
+
+        foreach (var track in partQtyTracks)
+        {
+            await _automationService.NotifyIfLowStockAsync(track.Part, track.PreviousQuantity);
+        }
 
         invoice.TotalAmount = totalAmount;
 

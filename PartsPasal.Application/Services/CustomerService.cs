@@ -20,6 +20,7 @@ public class CustomerService : ICustomerService
     private readonly IRepositoryBase<SalesInvoiceItem> _salesInvoiceItemRepository;
     private readonly IRepositoryBase<VehiclePart> _vehiclePartRepository;
     private readonly IStoreReviewService _storeReviewService;
+    private readonly ISystemAutomationService _automationService;
 
     public CustomerService(
         IRepositoryBase<Appointment> appointmentRepository,
@@ -30,7 +31,8 @@ public class CustomerService : ICustomerService
         UserManager<User> userManager,
         IRepositoryBase<SalesInvoiceItem> salesInvoiceItemRepository,
         IRepositoryBase<VehiclePart> vehiclePartRepository,
-        IStoreReviewService storeReviewService)
+        IStoreReviewService storeReviewService,
+        ISystemAutomationService automationService)
     {
         _appointmentRepository = appointmentRepository;
         _vehicleRepository = vehicleRepository;
@@ -41,6 +43,7 @@ public class CustomerService : ICustomerService
         _salesInvoiceItemRepository = salesInvoiceItemRepository;
         _vehiclePartRepository = vehiclePartRepository;
         _storeReviewService = storeReviewService;
+        _automationService = automationService;
     }
 
     // ================= EXISTING FEATURES =================
@@ -614,6 +617,8 @@ public class CustomerService : ICustomerService
 
         decimal totalAmount = 0;
 
+        var partQtyTracks = new List<(VehiclePart Part, int PreviousQuantity)>();
+
         foreach (var item in dto.Items)
         {
             var part = await _vehiclePartRepository.GetByIdAsync(item.PartId);
@@ -625,8 +630,11 @@ public class CustomerService : ICustomerService
                 if (part.StockQuantity < item.Quantity)
                     throw new System.Exception($"Not enough stock for {part.Name}");
 
+                var previousQty = part.StockQuantity;
                 part.StockQuantity -= item.Quantity;
                 _vehiclePartRepository.Update(part);
+
+                partQtyTracks.Add((part, previousQty));
             }
 
             var lineTotal = part.Price * item.Quantity;
@@ -647,6 +655,11 @@ public class CustomerService : ICustomerService
 
         await _vehiclePartRepository.SaveChangesAsync();
         await _salesInvoiceItemRepository.SaveChangesAsync();
+
+        foreach (var track in partQtyTracks)
+        {
+            await _automationService.NotifyIfLowStockAsync(track.Part, track.PreviousQuantity);
+        }
 
         invoice.TotalAmount = totalAmount;
 
