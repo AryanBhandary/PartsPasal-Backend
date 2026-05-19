@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using PartsPasal.Application.DTOs.Customer;
 using PartsPasal.Application.DTOs.Staff;
 using PartsPasal.Application.DTOs.Sales;
+using PartsPasal.Application.DTOs.Reports;
 using PartsPasal.Application.Interfaces;
 using PartsPasal.Domain.Entities;
 using PartsPasal.Domain.Enums;
@@ -699,5 +700,75 @@ public class CustomerService : ICustomerService
         }
 
         return invoiceDto;
+    }
+
+    public async Task<StaffCustomerReportsDto> GetCustomerReportsForStaffAsync()
+    {
+        var allCustomers = await _userManager.GetUsersInRoleAsync(nameof(UserRole.Customer));
+        var customerIds = allCustomers.Select(c => c.Id).ToList();
+
+        var allAppointments = await _appointmentRepository.GetAllAsync();
+        var appointmentCounts = allAppointments
+            .GroupBy(a => a.UserId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var allSalesInvoices = await _salesInvoiceRepository.GetAllAsync();
+        var purchaseCounts = allSalesInvoices
+            .GroupBy(s => s.CustomerId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var topSpenders = allCustomers
+            .OrderByDescending(u => u.TotalServiceSpent)
+            .Take(5)
+            .Select(u => new CustomerReportDto
+            {
+                CustomerId = u.Id,
+                Name = u.Name,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                TotalServiceSpent = u.TotalServiceSpent,
+                RegistrationDate = u.RegistrationDate,
+                PurchaseCount = purchaseCounts.GetValueOrDefault(u.Id, 0)
+            })
+            .ToList();
+
+        var regulars = allCustomers
+            .Where(u => appointmentCounts.GetValueOrDefault(u.Id, 0) >= 3)
+            .Select(u => new RegularCustomerReportDto
+            {
+                CustomerId = u.Id,
+                Name = u.Name,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                AppointmentCount = appointmentCounts.GetValueOrDefault(u.Id, 0),
+                TotalServiceSpent = u.TotalServiceSpent
+            })
+            .OrderByDescending(r => r.AppointmentCount)
+            .ToList();
+
+        var pendingCredits = allSalesInvoices
+            .Where(s => !s.IsPaid)
+            .OrderBy(s => s.SaleDate)
+            .Select(s => {
+                var customer = allCustomers.FirstOrDefault(c => c.Id == s.CustomerId);
+                return new PendingCreditReportDto
+                {
+                    InvoiceId = s.Id,
+                    CustomerId = s.CustomerId,
+                    CustomerName = customer?.Name ?? "Unknown",
+                    CustomerEmail = customer?.Email,
+                    SaleDate = s.SaleDate,
+                    AmountDue = s.FinalAmount,
+                    DaysOutstanding = (int)Math.Floor((DateTime.UtcNow - s.SaleDate).TotalDays)
+                };
+            })
+            .ToList();
+
+        return new StaffCustomerReportsDto
+        {
+            TopSpenders = topSpenders,
+            Regulars = regulars,
+            PendingCredits = pendingCredits
+        };
     }
 }
